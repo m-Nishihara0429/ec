@@ -1,8 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <!-- th:xmlns に加え、Spring Security連携用タグライブラリ sec:* を使うための名前空間も宣言している -->
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- 商品名を含む動的なタイトル -->
     <title th:text="${product.name} + ' | Simple EC'"></title>
     <link rel="stylesheet" th:href="@{/css/style.css}">

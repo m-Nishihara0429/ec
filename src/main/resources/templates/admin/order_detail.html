@@ -1,8 +1,9 @@
-<!-- 管理画面: 注文詳細ページ。1件の注文情報・明細を表示し、ステータス更新やキャンセル操作を行う -->
+﻿<!-- 管理画面: 注文詳細ページ。1件の注文情報・明細を表示し、ステータス更新やキャンセル操作を行う -->
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- タイトルも文字列結合で動的に組み立てる -->
     <title th:text="'注文詳細 #' + ${order.id} + ' | 管理画面'"></title>
     <link rel="stylesheet" th:href="@{/css/style.css}">

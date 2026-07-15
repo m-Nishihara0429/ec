@@ -1,8 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <!-- Thymeleaf属性(th:*)を使うための名前空間宣言 -->
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- th:text をtitleタグに使い、注文IDを含む動的なタイトルを生成している -->
     <title th:text="'注文詳細 #' + ${order.id} + ' | Simple EC'"></title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
