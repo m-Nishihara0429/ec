@@ -54,11 +54,9 @@
             <label for="validUntil">有効期間終了日（未入力なら制限なし）</label>
             <input type="date" id="validUntil" th:field="*{validUntil}">
         </div>
-        <div class="form-group">
-            <label>
-                <input type="checkbox" th:field="*{active}">
-                有効にする
-            </label>
+        <div class="form-group form-check">
+            <input type="checkbox" id="active" th:field="*{active}">
+            <label for="active">有効にする</label>
         </div>
         <button type="submit" class="btn btn-primary">保存</button>
         <a th:href="@{/admin/coupons}" class="btn">キャンセル</a>

@@ -51,6 +51,14 @@
         </tr>
         </tbody>
     </table>
+
+    <!-- ページ数が2以上ある場合のみページネーション（ページ番号リンク群）を表示 -->
+    <div class="pagination" th:if="${products.totalPages > 1}">
+        <a th:each="i : ${#numbers.sequence(0, products.totalPages - 1)}"
+           th:href="@{/admin/products(page=${i})}"
+           th:text="${i + 1}"
+           th:classappend="${i == products.number} ? 'active'"></a>
+    </div>
 </main>
 
 <!-- 共通フッターを差し込む -->
