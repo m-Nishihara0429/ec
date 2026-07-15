@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<!-- Thymeleaf属性(th:*)を使うための名前空間宣言 -->
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <!-- 注文履歴ページのタイトル -->
+    <title>注文履歴 | Simple EC</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<!-- 共通ヘッダーフラグメントを差し込む -->
+<div th:replace="~{fragments/layout :: header}"></div>
+
+<main class="container">
+    <h1>注文履歴</h1>
+
+    <!-- th:if="${#lists.isEmpty(orders)}" は orders リストが空かどうかを判定するユーティリティ関数。
+         空の場合はこのブロックのみ表示し、案内メッセージを出す -->
+    <div th:if="${#lists.isEmpty(orders)}">
+        <p>注文履歴はありません。</p>
+    </div>
+
+    <!-- th:unless は th:if の逆で「条件がfalseのときだけ表示」。
+         orders が空でない（=1件以上ある）場合にのみこのテーブルを表示する -->
+    <table class="table" th:unless="${#lists.isEmpty(orders)}">
+        <thead>
+        <tr><th>注文番号</th><th>注文日時</th><th>ステータス</th><th>合計金額</th><th></th></tr>
+        </thead>
+        <tbody>
+        <!-- orders コレクションを1件ずつループして行を描画 -->
+        <tr th:each="order : ${orders}">
+            <!-- 注文IDを "#" 付きで表示 -->
+            <td th:text="'#' + ${order.id}"></td>
+            <!-- #temporals.format(日時, パターン) はThymeleafの日時整形ユーティリティ -->
+            <td th:text="${#temporals.format(order.createdAt, 'yyyy/MM/dd HH:mm')}"></td>
+            <!-- 注文ステータスのラベル（例: 処理中、発送済みなど）を表示 -->
+            <td><span class="status-badge" th:text="${order.status.label}"></span></td>
+            <!-- 合計金額をカンマ区切りで表示 -->
+            <td th:text="${#numbers.formatInteger(order.totalPrice, 1, 'COMMA')} + '円'"></td>
+            <!-- 詳細ページへのリンク。@{/mypage/orders/{id}(id=${order.id})} はURLテンプレートの
+                 {id} プレースホルダーに order.id を埋め込んでURLを組み立てるThymeleaf構文 -->
+            <td><a th:href="@{/mypage/orders/{id}(id=${order.id})}">詳細</a></td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+
+<!-- 共通フッターフラグメントを差し込む -->
+<div th:replace="~{fragments/layout :: footer}"></div>
+</body>
+</html>

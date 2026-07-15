@@ -1,0 +1,1251 @@
+/* サイト全体で使い回す色やサイズをCSSカスタムプロパティ（変数）として定義する。
+   ここを変えるだけでサイト全体の配色を一括変更できるようにするための共通定義。 */
+:root {
+    --color-primary: #2563eb;      /* メインカラー：リンクやボタンなどの基調色（青） */
+    --color-primary-dark: #1d4ed8; /* メインカラーのhover時などに使う濃い色 */
+    --color-danger: #dc2626;       /* 警告・エラー・在庫切れなどを表す赤色 */
+    --color-text: #1f2937;         /* 基本の本文文字色（濃いグレー） */
+    --color-muted: #52525b;        /* 補足情報など目立たせたくないテキストの色 */
+    --color-border: #e5e7eb;       /* カードや区切り線などに使う薄いボーダー色 */
+    --color-bg: #f9fafb;           /* ページ全体の背景色（薄いグレー） */
+    --color-surface: #ffffff;      /* カードやヘッダーなど「浮いた面」の背景色（白） */
+    --radius: 8px;                 /* 角丸のサイズを統一するための共通値 */
+}
+
+/* 全要素に対して、paddingとborderをwidth/heightに含めるbox-sizingモデルを適用し、
+   レイアウト計算を直感的にするための共通リセット。 */
+* {
+    box-sizing: border-box;
+}
+
+/* ページ全体（body）の基本スタイル。フォント・文字色・背景・行間などサイト共通の土台を決める。 */
+body {
+    margin: 0; /* ブラウザ標準のbody余白を消す */
+    font-family: "Meiryo", "Yu Gothic Medium", "Yu Gothic UI", "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif; /* 日本語向けのフォント指定（優先順） */
+    font-size: 15px;   /* 基本の文字サイズ */
+    font-weight: 400;  /* 基本の文字の太さ（標準） */
+    color: var(--color-text);      /* 基本の文字色 */
+    background: var(--color-bg);   /* ページ全体の背景色 */
+    line-height: 1.7;  /* 行間を広めにして読みやすくする */
+    -webkit-font-smoothing: antialiased;   /* Webkit系ブラウザでの文字の滑らかな描画 */
+    -moz-osx-font-smoothing: grayscale;    /* macOS Firefoxでの文字の滑らかな描画 */
+    text-rendering: optimizeLegibility;    /* 文字の可読性を優先したレンダリング */
+}
+
+/* サイト内のすべてのリンク(a要素)の基本色と、下線を消すデフォルトスタイル。 */
+a {
+    color: var(--color-primary);
+    text-decoration: none;
+}
+
+/* リンクにマウスカーソルを乗せた（hover）ときだけ下線を表示し、リンクだと分かりやすくする。 */
+a:hover {
+    text-decoration: underline;
+}
+
+/* ページ内コンテンツの左右中央寄せ・最大幅・左右余白を統一する共通コンテナクラス。 */
+.container {
+    max-width: 1100px; /* コンテンツの最大幅を1100pxに制限（横幅の広い画面での間延び防止） */
+    margin: 0 auto;    /* 左右中央寄せ */
+    padding: 0 20px;   /* 左右に20pxの余白を確保（スマホ等での画面端との間隔） */
+}
+
+/* ログインフォームなど、通常よりも狭い幅で中央寄せしたいページ用のバリエーション。 */
+.container.narrow {
+    max-width: 480px;
+}
+
+/* Header */
+/* ページ最上部のヘッダー全体（ロゴ・ナビ・ログイン情報を含む帯）の背景と下境界線。 */
+.site-header {
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+}
+
+/* ヘッダー内部の要素（ロゴ・ナビ・認証エリア）を横並びに配置するflexboxコンテナ。 */
+.header-inner {
+    display: flex;
+    align-items: center;         /* 縦方向中央揃え */
+    justify-content: space-between; /* ロゴを左、右側の要素を右端に配置（間を均等に空ける） */
+    padding: 14px 20px;
+    flex-wrap: wrap;             /* 画面が狭い場合は折り返す */
+    gap: 12px;                   /* 要素同士の間隔 */
+}
+
+/* サイトロゴ（サイト名テキスト）の見た目。 */
+.logo {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+/* ヘッダー中央にあるメインナビゲーション（商品一覧・カテゴリ等のリンク群）を横並びにする。 */
+.main-nav {
+    display: flex;
+    gap: 20px;
+}
+
+/* ヘッダー右側のログイン状態表示エリア（ユーザー名・ログイン/ログアウトリンクなど）を横並びにする。 */
+.auth-area {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 0.9rem;
+}
+
+/* ログイン中のユーザー名表示テキストの色（控えめな色にして主張しすぎないようにする）。 */
+.user-name {
+    color: var(--color-muted);
+}
+
+/* Footer */
+/* ページ最下部のフッター全体のスタイル。本文との間に余白を取り、上部に区切り線を引く。 */
+.site-footer {
+    margin-top: 60px;
+    padding: 24px 0;
+    border-top: 1px solid var(--color-border);
+    color: var(--color-muted);
+    font-size: 0.85rem;
+}
+
+/* フッター内のFAQ・お問い合わせリンクを横並びに配置する。 */
+.footer-links {
+    display: flex;
+    gap: 16px;
+    margin: 0 0 10px;
+}
+
+/* Layout */
+/* ヘッダーとフッターの間にある、ページ本体（main要素かつcontainerクラス）の上下余白と最低の高さ。
+   min-heightを設定することで、コンテンツが少ないページでもフッターが画面上部に来すぎないようにする。 */
+main.container {
+    padding-top: 30px;
+    padding-bottom: 30px;
+    min-height: 60vh;
+}
+
+/* 商品一覧ページなどで使う、左サイドバー（カテゴリ一覧等）と右コンテンツを横並びにするレイアウト。 */
+.page-layout {
+    display: flex;
+    gap: 30px;
+}
+
+/* サイドバー部分の幅を固定し、画面が広がっても縮まないようにする（flex-shrink: 0）。 */
+.sidebar {
+    width: 200px;
+    flex-shrink: 0;
+}
+
+/* サイドバー以外のメインコンテンツ部分。残りの横幅をすべて使う（flex: 1）。 */
+.content {
+    flex: 1;
+}
+
+/* Side rails (wide screens only) */
+/* ヘッダー直下、.container(本文)の左右にキャンペーンバナー・おすすめ商品を並べるための外枠。
+   justify-content: centerにより、本文(.container)とレール2本をまとめて画面中央に寄せる。 */
+.page-shell {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 24px;
+}
+
+/* 左右のサイドレール本体。画面が十分広い場合のみ表示し、それ以外は display:none で
+   完全にレイアウトから外す（狭い画面での崩れを防ぐ）。position: stickyでスクロールに追従させる。 */
+.side-rail {
+    width: 220px;
+    flex-shrink: 0;
+    display: none;
+    position: sticky;
+    top: 20px;
+}
+
+/* 本文(max-width: 1100px)の両側にレール(220px)+余白を置いても収まる十分広い画面幅でのみ表示する。
+   一般的なノートPC・デスクトップモニターでも表示されるよう1280pxを基準にしている。 */
+@media (min-width: 1280px) {
+    .side-rail {
+        display: block;
+    }
+}
+
+/* 左レールに表示するキャンペーンバナー。目立たせるためメインカラーのグラデーション背景に白文字。 */
+.promo-banner {
+    background: linear-gradient(160deg, var(--color-primary), var(--color-primary-dark));
+    color: white;
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-top: 30px;
+}
+
+.promo-banner h3 {
+    margin: 0 0 8px;
+    font-size: 1.05rem;
+}
+
+.promo-banner p {
+    margin: 0;
+    font-size: 0.85rem;
+    line-height: 1.6;
+}
+
+/* 右レールに表示するおすすめ商品ボックス。カードと同系統の白背景・枠線デザイン。 */
+.recommend-box {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-top: 30px;
+}
+
+.recommend-box h3 {
+    margin: 0 0 12px;
+    font-size: 0.95rem;
+}
+
+.recommend-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.recommend-item {
+    margin-bottom: 12px;
+}
+
+/* おすすめ商品1件分のリンク全体。サムネイルと商品名・価格を横並びにし、リンク領域を広く取る。 */
+.recommend-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--color-text);
+}
+
+.recommend-item:last-child {
+    margin-bottom: 0;
+}
+
+/* おすすめ商品のサムネイル。商品一覧の.product-thumbと同様、正方形に切り抜いて表示する。 */
+.recommend-thumb {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--color-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.recommend-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.recommend-info {
+    min-width: 0;
+}
+
+.recommend-info .name {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--color-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.recommend-info .price {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--color-primary);
+}
+
+/* 各ページ冒頭にある見出し行（タイトルと右側のボタン等）を左右に配置するヘッダー。 */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Category list */
+/* サイドバーのカテゴリ一覧（ul要素）。リストの黒丸や既定の余白を消してカスタムデザインにする。 */
+.category-list {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0 0;
+}
+
+/* カテゴリ一覧の各項目(li)の下に少し余白を入れて項目間を見やすくする。 */
+.category-list li {
+    margin-bottom: 6px;
+}
+
+/* カテゴリ一覧内の各リンクをブロック要素にして、リンク全体（余白部分含む）をクリック可能にする。 */
+.category-list a {
+    display: block;
+    padding: 6px 10px;
+    border-radius: var(--radius);
+    color: var(--color-text);
+}
+
+/* 現在選択中のカテゴリリンク、およびページネーションで選択中のページ番号を
+   メインカラーで塗りつぶして強調表示する（選択中であることを視覚的に示す）。 */
+.category-list a.active,
+.pagination a.active {
+    background: var(--color-primary);
+    color: white;
+}
+
+/* Product grid */
+/* 商品一覧ページで商品カードを並べるグリッドレイアウト。
+   auto-fillとminmaxにより、画面幅に応じて自動的に列数が増減するレスポンシブなグリッドになる。 */
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); /* 最小200px、余りは均等割り、幅に収まる分だけ列を自動生成 */
+    gap: 20px;
+    margin-top: 16px;
+}
+
+/* 商品一覧の1枚1枚の商品カード。白背景・枠線・角丸のカードデザインで、
+   はみ出た内容は隠す(overflow: hidden)ことで角丸を綺麗に保つ。 */
+.product-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: box-shadow 0.15s; /* 影の変化をなめらかにアニメーションさせる */
+}
+
+/* 商品カードにマウスを乗せたときに影を浮かび上がらせ、クリックできることを示唆する。 */
+.product-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* 商品カード内のリンク（カード全体を覆うリンク）の下線を消し、ブロック要素にしてカード全体をクリック領域にする。 */
+.product-card a {
+    color: var(--color-text);
+    text-decoration: none;
+    display: block;
+}
+
+/* 商品画像のサムネイル表示エリア。正方形(aspect-ratio: 1/1)を保ち、
+   画像が無い場合でも中央揃えでプレースホルダーを表示できるようflexboxにしている。 */
+.product-thumb {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    background: var(--color-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden; /* 画像がはみ出さないようにする */
+}
+
+/* サムネイル内の実際の画像。枠いっぱいに広げつつ、object-fit: coverで比率を保ったままトリミング表示する。 */
+.product-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* 商品画像が未登録の場合に表示する「画像なし」テキストの見た目。 */
+.no-image {
+    color: var(--color-muted);
+    font-size: 0.85rem;
+}
+
+/* 商品詳細ページなど、大きいサイズの「画像なし」表示用のバリエーション（正方形＋中央揃え）。 */
+.no-image.large {
+    aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-bg);
+    border-radius: var(--radius);
+}
+
+/* 商品カード内の商品名見出し(h3)の文字サイズと余白。 */
+.product-card h3 {
+    font-size: 0.95rem;
+    margin: 10px 12px 4px;
+}
+
+/* 商品カード内の価格表示。メインカラーで太字にして目立たせる。 */
+.product-card .price {
+    margin: 0 12px 12px;
+    font-weight: 700;
+    color: var(--color-primary);
+}
+
+/* 商品カード内の在庫状況（在庫わずか・在庫切れなど）の表示。警告色の赤で小さめに表示する。 */
+.product-card .stock {
+    margin: 0 12px 12px;
+    color: var(--color-danger);
+    font-size: 0.8rem;
+}
+
+/* Pagination */
+/* 一覧ページ下部のページ番号（ページネーション）リンクを横並びに配置する。 */
+.pagination {
+    display: flex;
+    gap: 8px;
+    margin-top: 24px;
+}
+
+/* ページネーションの各ページ番号リンクの見た目（枠線付きの四角いボタン風）。 */
+.pagination a {
+    padding: 6px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    color: var(--color-text);
+}
+
+/* Product detail */
+/* 商品詳細ページの本体。左に画像、右に商品情報を横並びにし、画面が狭い場合は折り返す。 */
+.product-detail {
+    display: flex;
+    gap: 40px;
+    flex-wrap: wrap;
+}
+
+/* 商品詳細ページの画像エリアの幅。画面が狭い場合は100%までしか広がらないようmax-widthで制限する。 */
+.product-detail-image {
+    width: 360px;
+    max-width: 100%;
+}
+
+/* 商品詳細の画像自体を親要素いっぱいに広げ、角丸をつける。 */
+.product-detail-image img {
+    width: 100%;
+    border-radius: var(--radius);
+}
+
+/* 商品詳細ページの右側、商品名・価格・在庫・カート追加フォームなどをまとめたエリア。
+   残り幅をすべて使い(flex: 1)、狭くなりすぎないようmin-widthを設定。 */
+.product-detail-info {
+    flex: 1;
+    min-width: 260px;
+}
+
+/* 商品詳細ページの価格表示。一覧ページより大きめの文字サイズで強調する。 */
+.product-detail-info .price {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    margin: 10px 0;
+}
+
+/* カテゴリ名を丸型バッジ（ピル型）で表示するスタイル。border-radius: 999pxで完全な丸みを出す。 */
+.category-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    font-size: 0.8rem;
+    color: var(--color-muted);
+}
+
+/* 「在庫◯個」などの在庫状況テキストの見た目（控えめな色）。 */
+.stock-info {
+    color: var(--color-muted);
+    font-size: 0.9rem;
+}
+
+/* 「在庫切れ」を示す強調テキスト。警告色で太字にして目立たせる。 */
+.out-of-stock {
+    color: var(--color-danger);
+    font-weight: 700;
+}
+
+/* 商品詳細ページのカート追加フォーム（数量入力とボタン）を横並びに配置する。 */
+.product-detail-info form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+/* カート追加フォーム内の数量入力欄(input type="number")の幅と見た目。 */
+.product-detail-info input[type="number"] {
+    width: 70px;
+    padding: 8px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+}
+
+/* Buttons */
+/* サイト全体で使う基本ボタンの共通スタイル。<button>だけでなく<a>タグにも同じ見た目を適用できる。 */
+.btn {
+    display: inline-block;
+    padding: 10px 18px;
+    border-radius: var(--radius);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text);
+    cursor: pointer;
+    font-size: 0.95rem;
+    text-decoration: none;
+}
+
+/* 基本ボタンのhover時の見た目。下線は付けず、背景を少し変化させて反応を示す。 */
+.btn:hover {
+    text-decoration: none;
+    background: var(--color-bg);
+}
+
+/* 「購入する」「送信」など、最も重要なアクションを示すプライマリボタン（メインカラーで塗りつぶし）。 */
+.btn-primary {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: white;
+}
+
+/* プライマリボタンのhover時、より濃い色に変化させて押せることを示す。 */
+.btn-primary:hover {
+    background: var(--color-primary-dark);
+}
+
+/* 「削除」など危険な操作を示す赤色のボタン。 */
+.btn-danger {
+    background: var(--color-danger);
+    border-color: var(--color-danger);
+    color: white;
+}
+
+/* テーブル内など、小さめのスペースに置く縮小版ボタンのバリエーション。 */
+.btn-small {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+}
+
+/* 枠や背景のない、リンクのように見えるテキストボタン（<button>だがリンク風の見た目にしたい場合に使う）。 */
+.link-btn {
+    background: none;
+    border: none;
+    color: var(--color-primary);
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 0;
+}
+
+/* テキストボタンの危険な操作（削除など）用のバリエーション。色を赤に変える。 */
+.link-btn.danger {
+    color: var(--color-danger);
+}
+
+/* カート削除ボタンなどをテーブル内に埋め込む際、フォームがブロック要素で改行しないようにする。 */
+.inline-form {
+    display: inline-block;
+    margin: 0;
+}
+
+/* Forms */
+/* ログイン・登録・レビュー投稿など、各種フォーム全体の最大幅と上余白。 */
+.form {
+    max-width: 480px;
+    margin-top: 20px;
+}
+
+/* フォーム内の1項目（ラベル＋入力欄）のまとまりの下余白。 */
+.form-group {
+    margin-bottom: 16px;
+}
+
+/* フォーム項目のラベルテキスト。ブロック要素にして入力欄の上に配置し、太字で見やすくする。 */
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+/* テキスト入力・テキストエリア・セレクトボックスに共通する見た目（幅いっぱい・枠線・角丸）。 */
+.form-group input,
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    font-size: 0.95rem;
+    font-family: inherit; /* bodyのフォント指定を継承させる（ブラウザ標準フォントを使わせない） */
+}
+
+/* 入力バリデーションエラー時に項目の下に表示するエラーメッセージのスタイル。 */
+.field-error {
+    color: var(--color-danger);
+    font-size: 0.82rem;
+    margin: 4px 0 0;
+}
+
+/* チェックボックス＋ラベルを横並びにするための行（利用規約同意チェックなどで使用）。 */
+.form-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* チェックボックス自体のスタイル。widthを自動にし、accent-colorでチェック時の色をメインカラーに合わせる。 */
+.form-check input[type="checkbox"] {
+    width: auto;
+    padding: 0;
+    border: none;
+    accent-color: var(--color-primary);
+}
+
+/* チェックボックス横のラベルは通常のブロックラベルと違い、インライン表示・通常の太さにする。 */
+.form-check label {
+    display: inline;
+    margin-bottom: 0;
+    font-weight: 400;
+}
+
+/* フォーム送信失敗時などに表示するエラーアラートボックス（赤系の背景・枠線）。 */
+.alert-error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: var(--color-danger);
+    padding: 10px 14px;
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+}
+
+/* 登録成功時などに表示する成功アラートボックス（緑系の背景・枠線）。 */
+.alert-success {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #16a34a;
+    padding: 10px 14px;
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+}
+
+/* 補足説明・注意事項などを目立たせすぎずに囲むためのヒントボックス。 */
+.hint-box {
+    margin-top: 30px;
+    padding: 12px 16px;
+    background: var(--color-bg);
+    border-radius: var(--radius);
+    font-size: 0.85rem;
+    color: var(--color-muted);
+}
+
+/* Table */
+/* カート一覧や注文履歴などで使う表(table)の基本スタイル。幅いっぱいに広げ、罫線を1本にまとめる。 */
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 16px;
+}
+
+/* 表の見出しセル(th)・データセル(td)共通の余白・下罫線・文字揃え・文字サイズ。 */
+.table th,
+.table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--color-border);
+    text-align: left;
+    font-size: 0.92rem;
+}
+
+/* 表の見出し行(th)は背景色を付けて太字にし、データ行と区別しやすくする。 */
+.table th {
+    background: var(--color-bg);
+    font-weight: 600;
+}
+
+/* カート内の数量入力欄(input)の幅を小さめに固定する。 */
+.qty-input {
+    width: 60px;
+    padding: 6px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+}
+
+/* カート合計金額の表示エリア。上に余白を取り、やや大きめの文字サイズにする。 */
+.cart-total {
+    margin-top: 20px;
+    font-size: 1.1rem;
+}
+
+/* 注文ステータス（処理中・発送済みなど）を丸型バッジで表示するスタイル。会員管理のロール・状態バッジにも流用する。 */
+.status-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    font-size: 0.82rem;
+}
+
+/* 会員管理: マスター管理者ロールのバッジを他ロールより目立たせるための修飾クラス。 */
+.status-badge-master {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
+}
+
+/* 会員管理: 無効化されたアカウントの状態バッジを警告色にする修飾クラス。 */
+.status-badge-disabled {
+    background: var(--color-danger);
+    border-color: var(--color-danger);
+    color: #fff;
+}
+
+/* 補足説明など、目立たせたくない小さめの灰色テキスト。 */
+.text-muted {
+    color: var(--color-muted);
+    font-size: 0.9rem;
+}
+
+/* 会員管理一覧の操作列（ロール変更フォーム＋有効/無効化ボタン）を縦に並べるための枠。 */
+.user-row-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-start;
+}
+
+/* Admin */
+/* 管理画面上部にある管理メニュー（商品管理・注文管理などへのリンク）を横並びにする。 */
+.admin-nav {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+/* 管理画面ダッシュボードの統計カード（売上・注文数など）を並べるグリッド。商品グリッドと同様に自動列調整。 */
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+    margin: 16px 0 30px;
+}
+
+/* 統計情報を1件表示するカードの見た目（白背景・枠線・角丸）。 */
+.stat-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+}
+
+/* 統計カード内の項目名（「本日の売上」等）のラベルテキスト。 */
+.stat-label {
+    margin: 0 0 6px;
+    color: var(--color-muted);
+    font-size: 0.85rem;
+}
+
+/* 統計カード内の数値本体。大きく太字にして目立たせる。 */
+.stat-value {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+/* 売上推移グラフの集計単位（日別／週別／月別）を切り替えるタブ。 */
+.period-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+/* タブ1つ分のリンク。未選択時は控えめな枠線ボタン。 */
+.period-tab {
+    padding: 6px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    font-size: 0.85rem;
+    color: var(--color-text);
+}
+
+/* 選択中のタブは背景をメインカラーにして強調する。 */
+.period-tab.active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
+}
+
+/* ダッシュボードの売上棒グラフ（日別・カテゴリ別）を囲むカード。 */
+.chart-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin: 16px 0 30px;
+}
+
+/* 棒グラフ本体。棒を横並びにして下端を揃え、高さで金額の大小を表現する。
+   横に多く並ぶ場合はスクロールできるようにoverflow-xをautoにする。 */
+.bar-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    height: 200px;
+    padding-top: 22px;
+    overflow-x: auto;
+}
+
+/* 棒1本とその上下のラベル（金額・日付やカテゴリ名）をまとめた1列。 */
+.bar-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    height: 100%;
+    min-width: 44px;
+    flex: 1 0 auto;
+}
+
+/* 棒の真上に表示する金額ラベル。 */
+.bar-value {
+    font-size: 0.72rem;
+    color: var(--color-muted);
+    margin-bottom: 4px;
+    white-space: nowrap;
+}
+
+/* 棒本体。高さはテンプレート側でインラインstyle（%指定）を使って動的に変える。
+   金額0円でも存在が分かるようmin-heightを設けている。 */
+.bar {
+    width: 100%;
+    max-width: 36px;
+    background: var(--color-primary);
+    border-radius: 4px 4px 0 0;
+    min-height: 2px;
+}
+
+/* カテゴリ別グラフの棒は日別グラフと区別しやすいよう色を変える。 */
+.bar-category {
+    background: var(--color-primary-dark);
+}
+
+/* 棒の下に表示する軸ラベル（日付やカテゴリ名）。 */
+.bar-label {
+    margin-top: 6px;
+    font-size: 0.72rem;
+    color: var(--color-muted);
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* Mypage */
+/* マイページのユーザー情報表示ボックス（氏名・メールアドレス等）の見た目。 */
+.mypage-info {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-top: 16px;
+}
+
+/* マイページ内のメニューリスト（注文履歴・お気に入り等へのリンク一覧）。リストマーカーを消す。 */
+.mypage-menu {
+    list-style: none;
+    padding: 0;
+    margin-top: 20px;
+}
+
+/* マイページメニューの各項目の下余白。 */
+.mypage-menu li {
+    margin-bottom: 10px;
+}
+
+/* Search bar */
+/* 商品検索フォーム（テキスト入力＋カテゴリ選択などをまとめたバー）を横並びに配置し、
+   画面が狭い場合は折り返す(flex-wrap)ようにする。 */
+.search-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 20px;
+    padding: 14px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+}
+
+/* 検索バー内のテキスト入力欄。flex: 1で余った横幅をできるだけ広く使う。 */
+.search-bar input[type="text"] {
+    flex: 1;
+    min-width: 180px;
+    padding: 8px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+}
+
+/* 検索バー内のカテゴリ選択などのセレクトボックスの見た目。 */
+.search-bar select {
+    padding: 8px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+}
+
+/* Price range slider */
+/* 価格帯フィルターの全体（ラベル・現在値・スライダーをまとめたブロック）の幅。 */
+.price-range-group {
+    width: 220px;
+}
+
+/* 「価格帯」などのラベルテキストの見た目。 */
+.price-range-group label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-muted);
+}
+
+/* 現在選択中の「¥1,000〜¥5,000」のような金額表示テキスト。 */
+.price-range-values {
+    margin: 2px 0 8px;
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
+/* price-range.jsが操作するスライダー全体のラッパー。中に絶対配置の要素（トラックやつまみ）を重ねるための基準(position: relative)。 */
+.price-range-slider {
+    position: relative;
+    height: 20px;
+}
+
+/* スライダーの背景となる、選択されていない部分も含めた全体の細い線（トラックの下地）。 */
+.price-range-track-bg {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--color-border);
+    border-radius: 2px;
+    transform: translateY(-50%); /* 上下中央に配置するための調整 */
+}
+
+/* 2つのつまみの間、実際に選択されている価格範囲を示す色付きの線。
+   left/rightの値はprice-range.jsのupdate()関数がJavaScriptから動的に書き換える。 */
+.price-range-track-fill {
+    position: absolute;
+    top: 50%;
+    height: 4px;
+    background: var(--color-primary);
+    border-radius: 2px;
+    transform: translateY(-50%);
+}
+
+/* スライダー内に重ねて配置する2本の<input type="range">（最小用・最大用）に共通する基本スタイル。
+   ブラウザ標準の見た目をappearance: noneでリセットし、背景を透明にして自作のトラック(.price-range-track-bg等)を
+   見せるようにする。pointer-events: noneでinput自体のクリックを一旦無効化し、下のつまみ(thumb)部分だけ
+   クリックを受け付けるようにしている（つまみ以外の場所を誤ってドラッグしないようにするため）。 */
+.price-range-slider input[type="range"] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 20px;
+    margin: 0;
+    background: none;
+    pointer-events: none;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+/* Webkit系ブラウザ（Chrome/Edge/Safari）でのrange inputの溝（トラック）部分を透明にし、
+   自作の背景線(.price-range-track-bg)だけが見えるようにする。 */
+.price-range-slider input[type="range"]::-webkit-slider-runnable-track {
+    background: transparent;
+}
+
+/* Firefoxでのrange inputの溝（トラック）部分を透明にする（Webkit版と同じ意図）。 */
+.price-range-slider input[type="range"]::-moz-range-track {
+    background: transparent;
+}
+
+/* Webkit系ブラウザでの、range inputのつまみ（丸いドラッグハンドル）の見た目。
+   pointer-events: autoにすることで、親のinputはクリック無効でもこのつまみ部分だけは
+   マウス操作（ドラッグ）を受け付けるようにしている。 */
+.price-range-slider input[type="range"]::-webkit-slider-thumb {
+    pointer-events: auto;
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    border: 2px solid var(--color-surface);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    margin-top: -6px; /* トラック(4px)と縦位置を合わせるための微調整 */
+}
+
+/* Firefoxでの、range inputのつまみの見た目（Webkit版と同じ意図・同じデザイン）。 */
+.price-range-slider input[type="range"]::-moz-range-thumb {
+    pointer-events: auto;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    border: 2px solid var(--color-surface);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+}
+
+/* 「〇〇件の商品が見つかりました」のような検索結果件数の表示テキスト。 */
+.result-count {
+    color: var(--color-muted);
+    font-size: 0.85rem;
+    margin: 10px 0 0;
+}
+
+/* 商品カード内の評価（星の数など）の表示テキスト。オレンジ色にして目立たせる。 */
+.product-card .rating {
+    margin: 0 12px 4px;
+    color: #f59e0b;
+    font-size: 0.85rem;
+}
+
+/* Reviews */
+/* 商品詳細ページ下部のレビューセクション全体。本文との間に区切り線と余白を入れる。 */
+.reviews-section {
+    margin-top: 50px;
+    padding-top: 30px;
+    border-top: 1px solid var(--color-border);
+}
+
+/* レビュー平均評価（星の平均点など）のサマリー表示。オレンジ色で太字。 */
+.rating-summary {
+    color: #f59e0b;
+    font-weight: 600;
+}
+
+/* レビュー投稿フォームを囲むボックス（白背景・枠線・角丸）。 */
+.review-form-box {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    max-width: 480px;
+    margin-bottom: 24px;
+}
+
+/* レビュー投稿フォームボックス内の見出し(h3)の上余白を消し、ボックス上端に詰める。 */
+.review-form-box h3 {
+    margin-top: 0;
+}
+
+/* 投稿済みレビューの一覧(ul)。リストマーカーと既定パディングを消す。 */
+.review-list {
+    list-style: none;
+    padding: 0;
+}
+
+/* レビュー一覧の各レビュー項目(li)。上下に余白を取り、下に区切り線を引いて1件ずつを分ける。 */
+.review-item {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+/* 各レビューの評価（星の数）表示。オレンジ色の太字で目立たせる。 */
+.review-rating {
+    color: #f59e0b;
+    font-weight: 700;
+    margin: 0 0 2px;
+}
+
+/* 各レビューの投稿者名・投稿日時などのメタ情報表示。控えめな色・小さめの文字。 */
+.review-meta {
+    color: var(--color-muted);
+    font-size: 0.8rem;
+    margin: 0 0 6px;
+}
+
+/* レビュー本文（コメント）テキストの余白調整。 */
+.review-comment {
+    margin: 0;
+}
+
+/* FAQ */
+/* よくある質問1件分（質問+回答）のまとまり。レビュー一覧と同様に区切り線で区切る。 */
+.faq-item {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+/* FAQの質問文。太字にして回答と視覚的に区別する。 */
+.faq-question {
+    font-weight: 700;
+    margin: 0 0 6px;
+}
+
+/* FAQの回答文。 */
+.faq-answer {
+    margin: 0;
+    color: var(--color-muted);
+}
+
+/* 画面幅が700px以下（スマホ・小さめタブレット）になった場合のレイアウト調整。
+   サイドバー付きの2カラムレイアウトを1カラムの縦積みに変更する。 */
+@media (max-width: 700px) {
+    /* サイドバーとメインコンテンツの横並びを、縦に積む配置に変更する。 */
+    .page-layout {
+        flex-direction: column;
+    }
+    /* サイドバーの固定幅指定をやめ、画面幅いっぱいに広げる。 */
+    .sidebar {
+        width: 100%;
+    }
+}
+
+/* Hamburger button */
+/* スマホ表示時などに表示される、3本線のハンバーガーメニューボタン。
+   flex-directionをcolumnにして3本のspan（線）を縦に並べる。 */
+.hamburger-btn {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    width: 32px;
+    height: 32px;
+    padding: 4px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    flex-shrink: 0; /* ヘッダーが狭くなってもボタンが潰れないようにする */
+}
+
+/* ハンバーガーボタンを構成する1本1本の線（span要素）の見た目。 */
+.hamburger-btn span {
+    display: block;
+    width: 100%;
+    height: 2px;
+    background: var(--color-text);
+    border-radius: 2px;
+}
+
+/* Nav drawer */
+/* ドロワーメニュー表示中に背景全体を覆う半透明の黒いオーバーレイ。
+   menu.jsによってopenクラスが付け外しされ、opacityとvisibilityがアニメーションする。
+   position: fixed + inset: 0で画面全体を覆う。 */
+.nav-drawer-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    opacity: 0;      /* 初期状態は透明（非表示） */
+    visibility: hidden; /* クリック等を受け付けないよう非表示にしておく */
+    transition: opacity 0.2s ease; /* フェードイン・アウトをなめらかにする */
+    z-index: 100; /* 他のコンテンツより手前に表示する */
+}
+
+/* menu.jsがopenクラスを付与したときのオーバーレイの見た目（不透明かつ表示状態にする）。 */
+.nav-drawer-overlay.open {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* 画面左からスライドして出てくるナビゲーションドロワー本体。
+   普段はtranslateXで画面外（左）に隠しておき、openクラスが付いたときだけ画面内へスライドインする。 */
+.nav-drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 300px;
+    max-width: 85vw; /* スマホ画面より幅が大きくなりすぎないようにする */
+    background: var(--color-surface);
+    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.15);
+    transform: translateX(-100%); /* 初期状態は自分の幅ぶん左（画面外）にずらして隠す */
+    transition: transform 0.25s ease; /* スライドイン・アウトをなめらかにする */
+    z-index: 101; /* オーバーレイよりさらに手前に表示する */
+    overflow-y: auto; /* メニュー項目が多い場合は縦スクロールできるようにする */
+}
+
+/* menu.jsがopenクラスを付与したときのドロワーの見た目（元の位置＝画面内へ戻す）。 */
+.nav-drawer.open {
+    transform: translateX(0);
+}
+
+/* ドロワー上部の見出し部分（サイト名や閉じるボタンを含む帯）。濃い背景色に白文字で強調する。 */
+.nav-drawer-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 16px 20px;
+    background: var(--color-text);
+    color: white;
+    font-size: 0.9rem;
+}
+
+/* ドロワー見出し内にリンクがある場合の文字色（白）と下線表示。 */
+.nav-drawer-head a {
+    color: white;
+    text-decoration: underline;
+}
+
+/* ドロワーを閉じる×ボタンの見た目。枠や背景を持たないシンプルなアイコンボタン。 */
+.nav-drawer-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.4rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+}
+
+/* ドロワー内の各セクション（カテゴリ一覧・マイページリンクなど）を区切るブロック。下に境界線を引く。 */
+.nav-drawer-section {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+/* ドロワー内セクションの小見出し(h4)。大文字化と字間を広げてラベルらしい見た目にする。 */
+.nav-drawer-section h4 {
+    margin: 0 0 10px;
+    font-size: 0.8rem;
+    color: var(--color-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* ドロワー内セクションのリンク一覧(ul)。リストマーカーと既定余白を消す。 */
+.nav-drawer-section ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* ドロワー内セクションの各リンク項目(li)の下余白。 */
+.nav-drawer-section li {
+    margin-bottom: 4px;
+}
+
+/* ドロワー内セクションの各リンク自体。ブロック要素にしてタップ領域を広げる。 */
+.nav-drawer-section a {
+    display: block;
+    padding: 8px 4px;
+    color: var(--color-text);
+    border-radius: var(--radius);
+}
+
+/* ドロワー内リンクにマウス（またはタッチのhover相当）が乗ったときに背景色を付けて反応を示す。 */
+.nav-drawer-section a:hover {
+    background: var(--color-bg);
+    text-decoration: none;
+}
+
+/* ドロワー内にあるテキストボタン（ログアウトボタンなど）の余白を、他のリンク項目と揃える。 */
+.nav-drawer-section .link-btn {
+    padding: 8px 4px;
+}
+
+/* menu.jsによってドロワー表示中にbody要素へ付与されるクラス。
+   背後のページがスクロールしてしまわないようにoverflow: hiddenでスクロールを禁止する。 */
+body.no-scroll {
+    overflow: hidden;
+}

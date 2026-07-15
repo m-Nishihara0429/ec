@@ -1,0 +1,29 @@
+<!--
+    このファイルも fragments/layout.html と同様に「部品専用」テンプレート。
+    管理画面（admin/*.html）の各ページ上部に表示するサブナビゲーション（管理メニュー）を
+    th:fragment="nav" として1つだけ定義している。
+    各admin配下のページからは th:replace="~{fragments/admin_nav :: nav}" の形で呼び出され、
+    呼び出し元のタグがこのnav要素の中身にまるごと置き換わる。
+-->
+<!DOCTYPE html>
+<!-- xmlns:sec … 会員管理リンクをマスター管理者のみに表示するためsec:authorizeタグライブラリを使う -->
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<!-- nav フラグメント: 管理画面共通のサブメニュー（ダッシュボード／商品／カテゴリ／注文への切り替えリンク） -->
+<div th:fragment="nav">
+    <nav class="admin-nav">
+        <!-- th:href="@{/admin}" のようにThymeleafのURL式(@{...})を使うことで、
+             コンテキストパスを考慮した絶対パスのリンクが自動生成される -->
+        <a th:href="@{/admin}">ダッシュボード</a>
+        <a th:href="@{/admin/products}">商品管理</a>
+        <a th:href="@{/admin/categories}">カテゴリ管理</a>
+        <a th:href="@{/admin/orders}">注文管理</a>
+        <a th:href="@{/admin/coupons}">クーポン管理</a>
+        <a th:href="@{/admin/faqs}">FAQ管理</a>
+        <a th:href="@{/admin/inquiries}">問い合わせ管理</a>
+        <!-- 会員管理（ロール変更・有効/無効化）はマスター管理者（ROLE_MASTER）のみ表示・操作可能 -->
+        <a th:href="@{/admin/users}" sec:authorize="hasRole('MASTER')">会員管理</a>
+    </nav>
+</div>
+</body>
+</html>

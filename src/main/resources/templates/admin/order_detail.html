@@ -1,0 +1,78 @@
+<!-- 管理画面: 注文詳細ページ。1件の注文情報・明細を表示し、ステータス更新やキャンセル操作を行う -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <!-- タイトルも文字列結合で動的に組み立てる -->
+    <title th:text="'注文詳細 #' + ${order.id} + ' | 管理画面'"></title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div th:replace="~{fragments/layout :: header}"></div>
+
+<main class="container">
+    <div th:replace="~{fragments/admin_nav :: nav}"></div>
+
+    <h1 th:text="'注文詳細 #' + ${order.id}"></h1>
+
+    <!-- th:if="${errorMessage}" … errorMessage属性がnull/空でない場合のみエラーメッセージ段落を表示する（例: 不正なステータス遷移時など） -->
+    <p class="alert-error" th:if="${errorMessage}" th:text="${errorMessage}"></p>
+
+    <!-- 注文の基本情報（注文者・日時・ステータス・配送先）をそれぞれ文字列結合で表示 -->
+    <p th:text="'注文者: ' + ${order.user.name} + ' (' + ${order.user.email} + ')'"></p>
+    <p th:text="'注文日時: ' + ${#temporals.format(order.createdAt, 'yyyy/MM/dd HH:mm')}"></p>
+    <p th:text="'ステータス: ' + ${order.status.label}"></p>
+    <p th:text="'支払い方法: ' + ${order.paymentMethod.label}"></p>
+    <p th:text="'配送先: ' + ${order.address}"></p>
+
+    <!--
+        ステータス変更・キャンセル操作は「キャンセル済み」でも「完了」でもない注文にのみ表示する。
+        th:if の条件式はEnum#name()で文字列比較し、and でAND条件を組んでいる。
+        （完了・キャンセル済みの注文はこれ以上状態を変えられないため操作UIを隠す）
+    -->
+    <div th:if="${order.status.name() != 'CANCELLED' and order.status.name() != 'COMPLETED'}">
+        <!-- ステータス変更フォーム。selectでstatusesリストから選び、現在のステータスをth:selectedで初期選択状態にする -->
+        <form th:action="@{/admin/orders/{id}/status(id=${order.id})}" method="post" class="inline-form">
+            <label for="status">ステータス</label>
+            <select id="status" name="status">
+                <!-- th:each="s : ${statuses}" … 取りうる全ステータス値をoptionとして展開し、th:selectedで現在値と一致するものを選択済みにする -->
+                <option th:each="s : ${statuses}" th:value="${s}" th:text="${s.label}"
+                        th:selected="${s == order.status}"></option>
+            </select>
+            <button type="submit" class="btn btn-primary btn-small">更新</button>
+        </form>
+
+        <!-- 注文キャンセルフォーム。在庫が戻る旨をconfirm()で確認してから送信する -->
+        <form th:action="@{/admin/orders/{id}/cancel(id=${order.id})}" method="post" class="inline-form"
+              onsubmit="return confirm('この注文をキャンセルし、在庫を戻します。よろしいですか？');">
+            <button type="submit" class="btn btn-danger btn-small">キャンセル</button>
+        </form>
+    </div>
+
+    <!-- 注文明細テーブル。order.itemsをループして商品ごとの単価・数量・小計を表示する -->
+    <table class="table">
+        <thead>
+        <tr><th>商品</th><th>単価</th><th>数量</th><th>小計</th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="item : ${order.items}">
+            <td th:text="${item.product.name}"></td>
+            <td th:text="${#numbers.formatInteger(item.price, 1, 'COMMA')} + '円'"></td>
+            <td th:text="${item.quantity}"></td>
+            <!-- item.subtotal() … Thymeleafはオブジェクトのメソッド呼び出しも式言語(SpEL/OGNL)から可能。単価×数量の小計を返すメソッド -->
+            <td th:text="${#numbers.formatInteger(item.subtotal(), 1, 'COMMA')} + '円'"></td>
+        </tr>
+        </tbody>
+    </table>
+    <!-- クーポンが適用された場合のみ、割引額を表示する -->
+    <p th:if="${order.discountAmount > 0}"
+       th:text="'クーポン割引: -' + ${#numbers.formatInteger(order.discountAmount, 1, 'COMMA')} + '円 (' + ${order.couponCode} + ')'"></p>
+    <!-- 注文全体の合計金額表示（割引適用後） -->
+    <p class="cart-total">合計: <strong th:text="${#numbers.formatInteger(order.totalPrice, 1, 'COMMA')} + '円'"></strong></p>
+
+    <a th:href="@{/admin/orders}" class="btn">注文一覧に戻る</a>
+</main>
+
+<div th:replace="~{fragments/layout :: footer}"></div>
+</body>
+</html>

@@ -1,0 +1,45 @@
+<!-- 管理画面: カテゴリ管理ページ。カテゴリの一覧・削除と、シンプルな新規追加フォームを1画面にまとめている -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>カテゴリ管理 | Simple EC 管理画面</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div th:replace="~{fragments/layout :: header}"></div>
+
+<main class="container">
+    <div th:replace="~{fragments/admin_nav :: nav}"></div>
+
+    <h1>カテゴリ管理</h1>
+
+    <!-- カテゴリ一覧テーブル。th:eachでcategoriesリストをループし、1件ごとに1行を出力する -->
+    <table class="table">
+        <thead><tr><th>ID</th><th>カテゴリ名</th><th></th></tr></thead>
+        <tbody>
+        <tr th:each="category : ${categories}">
+            <td th:text="${category.id}"></td>
+            <td th:text="${category.name}"></td>
+            <td>
+                <!-- カテゴリ削除フォーム。誤削除防止のためconfirm()で確認してからPOST送信する -->
+                <form th:action="@{/admin/categories/{id}/delete(id=${category.id})}" method="post" class="inline-form"
+                      onsubmit="return confirm('このカテゴリを削除しますか？');">
+                    <button type="submit" class="link-btn danger">削除</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <!-- 新規カテゴリ登録フォーム。th:objectを使わずname属性だけで送信する単純なフォーム（リクエストパラメータ"name"として送られる） -->
+    <h2>新規カテゴリ登録</h2>
+    <form th:action="@{/admin/categories}" method="post" class="form inline-form">
+        <input type="text" name="name" placeholder="カテゴリ名" required>
+        <button type="submit" class="btn btn-primary">追加</button>
+    </form>
+</main>
+
+<div th:replace="~{fragments/layout :: footer}"></div>
+</body>
+</html>

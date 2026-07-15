@@ -1,0 +1,69 @@
+<!-- 管理画面: クーポン登録・編集ページ。同じフォームをidの有無で「新規登録」「編集」の両方に使い回す -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>クーポン登録・編集 | Simple EC 管理画面</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div th:replace="~{fragments/layout :: header}"></div>
+
+<main class="container">
+    <div th:replace="~{fragments/admin_nav :: nav}"></div>
+
+    <h1 th:text="${couponForm.id != null} ? 'クーポン編集' : 'クーポン登録'"></h1>
+
+    <p class="alert-error" th:if="${errorMessage}" th:text="${errorMessage}"></p>
+
+    <form th:action="@{/admin/coupons}" th:object="${couponForm}" method="post" class="form">
+        <input type="hidden" th:field="*{id}">
+        <div class="form-group">
+            <label for="code">クーポンコード</label>
+            <input type="text" id="code" th:field="*{code}" placeholder="例: SUMMER2026">
+            <p class="field-error" th:if="${#fields.hasErrors('code')}" th:errors="*{code}"></p>
+        </div>
+        <div class="form-group">
+            <label for="discountType">割引方式</label>
+            <select id="discountType" th:field="*{discountType}">
+                <option th:each="type : ${discountTypes}" th:value="${type}" th:text="${type.label}"></option>
+            </select>
+            <p class="field-error" th:if="${#fields.hasErrors('discountType')}" th:errors="*{discountType}"></p>
+        </div>
+        <div class="form-group">
+            <label for="discountValue">割引額（率）</label>
+            <input type="number" id="discountValue" th:field="*{discountValue}" min="1">
+            <p class="field-error" th:if="${#fields.hasErrors('discountValue')}" th:errors="*{discountValue}"></p>
+        </div>
+        <div class="form-group">
+            <label for="minOrderAmount">最低注文金額（円・未入力なら制限なし）</label>
+            <input type="number" id="minOrderAmount" th:field="*{minOrderAmount}" min="0">
+            <p class="field-error" th:if="${#fields.hasErrors('minOrderAmount')}" th:errors="*{minOrderAmount}"></p>
+        </div>
+        <div class="form-group">
+            <label for="usageLimit">総利用可能回数（未入力なら無制限）</label>
+            <input type="number" id="usageLimit" th:field="*{usageLimit}" min="1">
+            <p class="field-error" th:if="${#fields.hasErrors('usageLimit')}" th:errors="*{usageLimit}"></p>
+        </div>
+        <div class="form-group">
+            <label for="validFrom">有効期間開始日（未入力なら制限なし）</label>
+            <input type="date" id="validFrom" th:field="*{validFrom}">
+        </div>
+        <div class="form-group">
+            <label for="validUntil">有効期間終了日（未入力なら制限なし）</label>
+            <input type="date" id="validUntil" th:field="*{validUntil}">
+        </div>
+        <div class="form-group">
+            <label>
+                <input type="checkbox" th:field="*{active}">
+                有効にする
+            </label>
+        </div>
+        <button type="submit" class="btn btn-primary">保存</button>
+        <a th:href="@{/admin/coupons}" class="btn">キャンセル</a>
+    </form>
+</main>
+
+<div th:replace="~{fragments/layout :: footer}"></div>
+</body>
+</html>

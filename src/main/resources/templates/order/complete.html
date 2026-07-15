@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<!-- Thymeleaf属性(th:*)を使うための名前空間宣言 -->
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <!-- 注文完了ページのタイトル -->
+    <title>ご注文完了 | Simple EC</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<!-- 共通ヘッダーフラグメントを差し込む -->
+<div th:replace="~{fragments/layout :: header}"></div>
+
+<main class="container">
+    <h1>ご注文ありがとうございました</h1>
+    <!-- '文字列' + ${式} の形で文字列連結し、注文IDを表示する -->
+    <p th:text="'注文番号: #' + ${order.id}"></p>
+    <!-- クーポンが適用された場合のみ、割引額を表示する -->
+    <p th:if="${order.discountAmount > 0}"
+       th:text="'クーポン割引: -' + ${#numbers.formatInteger(order.discountAmount, 1, 'COMMA')} + '円 (' + ${order.couponCode} + ')'"></p>
+    <!-- 合計金額（割引適用後）をカンマ区切りに整形して表示 -->
+    <p th:text="'合計金額: ' + ${#numbers.formatInteger(order.totalPrice, 1, 'COMMA')} + '円'"></p>
+    <!-- 支払い方法を表示 -->
+    <p th:text="'支払い方法: ' + ${order.paymentMethod.label}"></p>
+    <!-- 配送先住所を表示 -->
+    <p th:text="'配送先: ' + ${order.address}"></p>
+    <!-- トップページへのリンク。th:href="@{/}" はコンテキストパス込みのルートURLを生成 -->
+    <a th:href="@{/}" class="btn btn-primary">買い物を続ける</a>
+    <!-- 注文履歴ページへのリンク -->
+    <a th:href="@{/mypage/orders}" class="btn">注文履歴を見る</a>
+</main>
+
+<!-- 共通フッターフラグメントを差し込む -->
+<div th:replace="~{fragments/layout :: footer}"></div>
+</body>
+</html>

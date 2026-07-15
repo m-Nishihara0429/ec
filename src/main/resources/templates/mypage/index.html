@@ -1,0 +1,40 @@
+<!-- マイページ: トップページ。ユーザー自身の基本情報表示と、注文履歴・編集などへのメニューを提供する -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>マイページ | Simple EC</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div th:replace="~{fragments/layout :: header}"></div>
+
+<main class="container">
+    <h1>マイページ</h1>
+
+    <!--
+        ${param.updated} / ${param.passwordChanged} … リクエストのクエリパラメータ(?updated や ?passwordChanged)の存在を判定する。
+        編集完了後にリダイレクトでこのパラメータを付けて戻ってくることで「更新しました」という完了メッセージを表示する仕組み（Redirect-after-POSTパターン）。
+    -->
+    <p class="alert-success" th:if="${param.updated}">会員情報を更新しました。</p>
+    <p class="alert-success" th:if="${param.passwordChanged}">パスワードを変更しました。</p>
+
+    <!-- ログイン中ユーザーの基本情報（氏名・メールアドレス）を表示 -->
+    <div class="mypage-info">
+        <p th:text="'氏名: ' + ${user.name}"></p>
+        <p th:text="'メールアドレス: ' + ${user.email}"></p>
+    </div>
+
+    <!-- マイページ内の各機能へのメニュー一覧 -->
+    <ul class="mypage-menu">
+        <li><a th:href="@{/mypage/orders}">注文履歴</a></li>
+        <li><a th:href="@{/mypage/edit}">会員情報編集</a></li>
+        <li><a th:href="@{/mypage/password}">パスワード変更</a></li>
+        <li><a th:href="@{/cart}">カートを見る</a></li>
+        <li><a th:href="@{/}">商品一覧に戻る</a></li>
+    </ul>
+</main>
+
+<div th:replace="~{fragments/layout :: footer}"></div>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!-- 管理画面: FAQ登録・編集ページ。同じフォームをidの有無で「新規登録」「編集」の両方に使い回す -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>FAQ登録・編集 | Simple EC 管理画面</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div th:replace="~{fragments/layout :: header}"></div>
+
+<main class="container">
+    <div th:replace="~{fragments/admin_nav :: nav}"></div>
+
+    <h1 th:text="${faqForm.id != null} ? 'FAQ編集' : 'FAQ登録'"></h1>
+
+    <form th:action="@{/admin/faqs}" th:object="${faqForm}" method="post" class="form">
+        <input type="hidden" th:field="*{id}">
+        <div class="form-group">
+            <label for="question">質問</label>
+            <input type="text" id="question" th:field="*{question}">
+            <p class="field-error" th:if="${#fields.hasErrors('question')}" th:errors="*{question}"></p>
+        </div>
+        <div class="form-group">
+            <label for="answer">回答</label>
+            <textarea id="answer" th:field="*{answer}" rows="4"></textarea>
+            <p class="field-error" th:if="${#fields.hasErrors('answer')}" th:errors="*{answer}"></p>
+        </div>
+        <div class="form-group">
+            <label for="displayOrder">表示順（小さい値ほど先に表示）</label>
+            <input type="number" id="displayOrder" th:field="*{displayOrder}">
+        </div>
+        <button type="submit" class="btn btn-primary">保存</button>
+        <a th:href="@{/admin/faqs}" class="btn">キャンセル</a>
+    </form>
+</main>
+
+<div th:replace="~{fragments/layout :: footer}"></div>
+</body>
+</html>

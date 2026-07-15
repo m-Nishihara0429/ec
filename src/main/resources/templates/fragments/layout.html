@@ -1,0 +1,135 @@
+<!--
+    このファイルは「フラグメント（部品）専用」のテンプレートです。
+    ページ全体を描画するのではなく、他の画面（admin/*.html, mypage/*.html など）から
+    th:replace="~{fragments/layout :: header}" のように呼び出されて、
+    ヘッダーやフッターなどの「共通パーツ」だけを差し込むために使われます。
+
+    仕組みのポイント:
+    - th:fragment="名前" … このdivを「名前」という部品として登録する（定義側）。
+      下の header, footer がそれぞれ独立した部品として定義されている。
+    - th:replace="~{テンプレートパス :: 部品名}" … 呼び出し側のタグを、
+      指定した部品の中身「まるごと」で置き換える（呼び出し元のタグ自体は消える）。
+    - th:insert（このファイルでは未使用だが） … th:replaceと似ているが、
+      呼び出し元のタグは残したまま、その内側に部品の中身を挿入する点が異なる。
+    - <html><body>タグはThymeleafの検証を通すための入れ物にすぎず、
+      実際に他画面へ差し込まれるのはth:fragmentが付いたdivの中身だけ。
+-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+    header フラグメント: 全ページ共通のヘッダー（上部バー）とハンバーガーメニュー（ドロワー）をまとめて定義。
+    xmlns:sec は Spring Security 連携タグライブラリ（sec:authorize など）をこのdiv内で使うための名前空間宣言。
+-->
+<div th:fragment="header" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+    <!-- ページ上部の固定ヘッダー：ロゴ・メインナビ・ログイン状態表示 -->
+    <header class="site-header">
+        <div class="container header-inner">
+            <!-- スマホ表示などで使うハンバーガーメニューの開閉ボタン（JS側でクリックを拾う） -->
+            <button type="button" class="hamburger-btn" id="menuOpenBtn" aria-label="メニューを開く" aria-controls="navDrawer" aria-expanded="false">
+                <span></span><span></span><span></span>
+            </button>
+            <!-- サイトロゴ。th:href="@{/}" はThymeleafのURL式で、コンテキストパスを考慮したトップページへのリンクを生成する -->
+            <a class="logo" th:href="@{/}">Simple EC</a>
+            <!-- PC表示用のメインナビゲーション -->
+            <nav class="main-nav">
+                <a th:href="@{/}">商品一覧</a>
+                <!-- sec:authorize="isAuthenticated()" … ログイン済みユーザーにだけこのタグを表示する（Spring Security拡張） -->
+                <a th:href="@{/cart}" sec:authorize="isAuthenticated()">カート</a>
+                <a th:href="@{/mypage}" sec:authorize="isAuthenticated()">マイページ</a>
+                <!-- hasRole('ADMIN') … ADMINロールを持つユーザーにだけ管理画面リンクを表示する -->
+                <a th:href="@{/admin}" sec:authorize="hasRole('ADMIN')">管理画面</a>
+            </nav>
+            <!-- ログイン状態に応じてユーザー名／ログアウトボタン、または ログイン／新規登録リンクを出し分ける領域 -->
+            <div class="auth-area">
+                <span sec:authorize="isAuthenticated()" class="user-name">
+                    <!-- sec:authentication="name" … ログイン中ユーザーの表示名（Authenticationオブジェクトのname）を出力 -->
+                    <span sec:authentication="name"></span> さん
+                </span>
+                <!-- ログアウトはPOSTフォームで実行する（CSRF対策のため単なるリンクではなくフォーム送信にしている） -->
+                <form th:action="@{/logout}" method="post" sec:authorize="isAuthenticated()" class="inline-form">
+                    <button type="submit" class="link-btn">ログアウト</button>
+                </form>
+                <!-- !isAuthenticated() … 未ログインユーザーにだけ表示（sec:authorizeの式は否定「!」も使える） -->
+                <a th:href="@{/login}" sec:authorize="!isAuthenticated()">ログイン</a>
+                <a th:href="@{/register}" sec:authorize="!isAuthenticated()">新規登録</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- ドロワー（横から出てくるメニュー）を開いたときに背景を暗く覆うオーバーレイ。クリックでメニューを閉じるためのもの -->
+    <div class="nav-drawer-overlay" id="navDrawerOverlay"></div>
+    <!-- ハンバーガーボタンで開閉するナビゲーションドロワー本体（主にスマホ向けの横スライドメニュー） -->
+    <aside class="nav-drawer" id="navDrawer" aria-hidden="true">
+        <!-- ドロワー上部：ログイン状態の挨拶文、または未ログイン向けのログイン／登録リンク -->
+        <div class="nav-drawer-head">
+            <span sec:authorize="isAuthenticated()">
+                こんにちは、<span sec:authentication="name"></span> さん
+            </span>
+            <span sec:authorize="!isAuthenticated()">
+                <a th:href="@{/login}">ログイン</a> / <a th:href="@{/register}">新規登録</a>
+            </span>
+            <button type="button" class="nav-drawer-close" id="menuCloseBtn" aria-label="メニューを閉じる">&times;</button>
+        </div>
+
+        <!-- ショップ内の主要ページへのリンク一覧。ログイン状態・権限に応じてsec:authorizeで表示/非表示を切り替える -->
+        <div class="nav-drawer-section">
+            <h4>ショップメニュー</h4>
+            <ul>
+                <li><a th:href="@{/}">商品一覧</a></li>
+                <li sec:authorize="isAuthenticated()"><a th:href="@{/cart}">カート</a></li>
+                <li sec:authorize="isAuthenticated()"><a th:href="@{/mypage}">マイページ</a></li>
+                <li sec:authorize="isAuthenticated()"><a th:href="@{/mypage/orders}">注文履歴</a></li>
+                <!-- 以下4つはADMINロールを持つユーザーにだけ表示される管理画面へのショートカット -->
+                <li sec:authorize="hasRole('ADMIN')"><a th:href="@{/admin}">管理画面(ダッシュボード)</a></li>
+                <li sec:authorize="hasRole('ADMIN')"><a th:href="@{/admin/products}">管理画面(商品)</a></li>
+                <li sec:authorize="hasRole('ADMIN')"><a th:href="@{/admin/categories}">管理画面(カテゴリ)</a></li>
+                <li sec:authorize="hasRole('ADMIN')"><a th:href="@{/admin/orders}">管理画面(注文)</a></li>
+                <li sec:authorize="hasRole('ADMIN')"><a th:href="@{/admin/coupons}">管理画面(クーポン)</a></li>
+                <!-- 会員管理はマスター管理者（ROLE_MASTER）のみ表示される -->
+                <li sec:authorize="hasRole('MASTER')"><a th:href="@{/admin/users}">管理画面(会員管理)</a></li>
+            </ul>
+        </div>
+
+        <!-- カテゴリ一覧をループ表示する部分。navCategoriesはコントローラー側で全画面共通に渡されるモデル属性 -->
+        <div class="nav-drawer-section">
+            <h4>カテゴリで探す</h4>
+            <ul>
+                <li><a th:href="@{/}">すべて</a></li>
+                <!-- th:each="category : ${navCategories}" … navCategoriesリストの要素数だけ<li>を繰り返し生成する -->
+                <li th:each="category : ${navCategories}">
+                    <!-- @{/(categoryId=${category.id})} … トップページURLにcategoryIdクエリパラメータを付与するリンクを生成 -->
+                    <a th:href="@{/(categoryId=${category.id})}" th:text="${category.name}"></a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- ログイン中のみログアウトフォームを表示する（div自体にsec:authorizeを付けている点に注目） -->
+        <div class="nav-drawer-section" sec:authorize="isAuthenticated()">
+            <form th:action="@{/logout}" method="post">
+                <button type="submit" class="link-btn">ログアウト</button>
+            </form>
+        </div>
+    </aside>
+
+    <!-- ハンバーガーメニューの開閉アニメーションやオーバーレイ制御を行うJSファイルを読み込む。deferで描画をブロックしない -->
+    <script th:src="@{/js/menu.js}" defer></script>
+</div>
+
+<!-- footer フラグメント: 全ページ共通のフッター（コピーライト表示）を定義。各画面末尾からth:replaceで呼び出される -->
+<div th:fragment="footer">
+    <footer class="site-footer">
+        <div class="container">
+            <!-- FAQ・問い合わせページへの導線。全ページ共通フッターに置くことでどの画面からもアクセスできるようにする -->
+            <p class="footer-links">
+                <a th:href="@{/faq}">よくある質問</a>
+                <a th:href="@{/contact}">お問い合わせ</a>
+            </p>
+            <p>&copy; 2026 Simple EC. All rights reserved.</p>
+        </div>
+    </footer>
+</div>
+
+</body>
+</html>

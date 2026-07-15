@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<!-- Thymeleaf属性(th:*)を使うための名前空間宣言 -->
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <!-- カートページのタイトル -->
+    <title>カート | Simple EC</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <!-- カート操作用のJavaScriptを読み込む。th:src="@{...}" でコンテキストパス込みのURLを生成。defer属性でHTML解析後に実行 -->
+    <script th:src="@{/js/cart.js}" defer></script>
+</head>
+<body>
+<!-- 共通ヘッダーフラグメントを差し込む -->
+<div th:replace="~{fragments/layout :: header}"></div>
+
+<main class="container">
+    <h1>カート</h1>
+
+    <!-- カート内商品が0件の場合のみこのブロックを表示（空カートの案内） -->
+    <div th:if="${#lists.isEmpty(items)}">
+        <p>カートに商品がありません。</p>
+        <a th:href="@{/}" class="btn">商品一覧に戻る</a>
+    </div>
+
+    <!-- カート内商品が1件以上ある場合のみ、このブロック全体（明細テーブルと合計）を表示 -->
+    <div th:unless="${#lists.isEmpty(items)}">
+        <table class="table">
+            <thead>
+            <tr>
+                <th>商品</th>
+                <th>単価</th>
+                <th>数量</th>
+                <th>小計</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <!-- カート内アイテムを1件ずつループして行を描画 -->
+            <tr th:each="item : ${items}">
+                <td>
+                    <!-- 商品詳細ページへのリンク。テキストは商品名 -->
+                    <a th:href="@{/products/{id}(id=${item.product.id})}" th:text="${item.product.name}"></a>
+                </td>
+                <!-- 単価をカンマ区切りで表示 -->
+                <td th:text="${#numbers.formatInteger(item.product.price, 1, 'COMMA')} + '円'"></td>
+                <td>
+                    <!-- 数量変更用の小さなフォーム。行ごとに独立したフォームで、送信すると即座に数量が更新される -->
+                    <form th:action="@{/cart/update}" method="post" class="inline-form">
+                        <!-- どのカート明細を更新するかをhiddenで送るためのID -->
+                        <input type="hidden" name="cartItemId" th:value="${item.id}">
+                        <!-- th:value="${item.quantity}" で現在の数量を初期値としてセット -->
+                        <input type="number" name="quantity" th:value="${item.quantity}" min="0" class="qty-input">
+                        <button type="submit" class="btn btn-small">更新</button>
+                    </form>
+                </td>
+                <!-- この明細の小計（単価×数量）を表示 -->
+                <td th:text="${#numbers.formatInteger(item.subtotal(), 1, 'COMMA')} + '円'"></td>
+                <td>
+                    <!-- 削除用フォーム。cartItemIdをhiddenで送り、削除ボタン押下でその明細をカートから削除する -->
+                    <form th:action="@{/cart/remove}" method="post" class="inline-form">
+                        <input type="hidden" name="cartItemId" th:value="${item.id}">
+                        <button type="submit" class="btn btn-small btn-danger">削除</button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+
+        <!-- カート全体の合計金額とレジ（注文手続き）への導線 -->
+        <div class="cart-total">
+            <p>合計: <strong th:text="${#numbers.formatInteger(total, 1, 'COMMA')} + '円'"></strong></p>
+            <a th:href="@{/checkout}" class="btn btn-primary">レジに進む</a>
+        </div>
+    </div>
+</main>
+
+<!-- 共通フッターフラグメントを差し込む -->
+<div th:replace="~{fragments/layout :: footer}"></div>
+</body>
+</html>

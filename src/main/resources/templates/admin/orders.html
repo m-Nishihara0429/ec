@@ -1,0 +1,41 @@
+<!-- 管理画面: 注文一覧ページ。すべての注文を新しい順などで一覧表示し、詳細ページへのリンクを提供する -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>注文管理 | Simple EC 管理画面</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div th:replace="~{fragments/layout :: header}"></div>
+
+<main class="container">
+    <div th:replace="~{fragments/admin_nav :: nav}"></div>
+
+    <h1>注文管理</h1>
+
+    <table class="table">
+        <thead>
+        <tr><th>注文番号</th><th>注文者</th><th>注文日時</th><th>ステータス</th><th>合計金額</th><th></th></tr>
+        </thead>
+        <tbody>
+        <!-- th:each="order : ${orders}" … コントローラーから渡された注文リストを1件ずつorder変数に入れてループ表示 -->
+        <tr th:each="order : ${orders}">
+            <!-- 文字列結合(+)で「#123」のような注文番号表示を組み立てる -->
+            <td th:text="'#' + ${order.id}"></td>
+            <td th:text="${order.user.name}"></td>
+            <!-- #temporals.format(日時, パターン) … 日付・時刻オブジェクトを指定書式の文字列に変換するThymeleafユーティリティ -->
+            <td th:text="${#temporals.format(order.createdAt, 'yyyy/MM/dd HH:mm')}"></td>
+            <!-- order.status.label … 注文ステータスのEnumが持つ日本語表示名（例: 発送済み）を表示 -->
+            <td><span class="status-badge" th:text="${order.status.label}"></span></td>
+            <td th:text="${#numbers.formatInteger(order.totalPrice, 1, 'COMMA')} + '円'"></td>
+            <!-- 注文詳細ページへのリンク。URLの{id}プレースホルダーをorder.idで置換する -->
+            <td><a th:href="@{/admin/orders/{id}(id=${order.id})}">詳細</a></td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+
+<div th:replace="~{fragments/layout :: footer}"></div>
+</body>
+</html>

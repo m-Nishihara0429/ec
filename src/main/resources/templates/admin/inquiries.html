@@ -1,0 +1,37 @@
+<!-- 管理画面: 問い合わせ一覧ページ。すべての問い合わせを新しい順に一覧表示し、詳細ページへのリンクを提供する -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>問い合わせ管理 | Simple EC 管理画面</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div th:replace="~{fragments/layout :: header}"></div>
+
+<main class="container">
+    <div th:replace="~{fragments/admin_nav :: nav}"></div>
+
+    <h1>問い合わせ管理</h1>
+
+    <p th:if="${#lists.isEmpty(inquiries)}">問い合わせはまだありません。</p>
+
+    <table class="table" th:unless="${#lists.isEmpty(inquiries)}">
+        <thead>
+        <tr><th>受信日時</th><th>お名前</th><th>メールアドレス</th><th>件名</th><th></th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="inquiry : ${inquiries}">
+            <td th:text="${#temporals.format(inquiry.createdAt, 'yyyy/MM/dd HH:mm')}"></td>
+            <td th:text="${inquiry.name}"></td>
+            <td th:text="${inquiry.email}"></td>
+            <td th:text="${inquiry.subject}"></td>
+            <td><a th:href="@{/admin/inquiries/{id}(id=${inquiry.id})}">詳細</a></td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+
+<div th:replace="~{fragments/layout :: footer}"></div>
+</body>
+</html>

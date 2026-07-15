@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<!-- Thymeleaf属性(th:*)を使うための名前空間宣言 -->
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <!-- 新規登録ページのタイトル -->
+    <title>新規登録 | Simple EC</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<!-- 共通ヘッダーフラグメントを差し込む -->
+<div th:replace="~{fragments/layout :: header}"></div>
+
+<main class="container narrow">
+    <h1>新規登録</h1>
+
+    <!-- コントローラ側でエラーメッセージがセットされた場合のみ表示（例: メール重複など） -->
+    <p class="alert-error" th:if="${errorMessage}" th:text="${errorMessage}"></p>
+
+    <!-- 会員登録フォーム。
+         th:action="@{/register}" で送信先URLを指定、method="post" でPOST送信。
+         th:object="${registerForm}" は th:field のバインド先となるフォームオブジェクトを指定する。
+         method="post" のためThymeleaf+Spring Securityにより自動でCSRFトークンのhidden inputが挿入される -->
+    <form th:action="@{/register}" th:object="${registerForm}" method="post" class="form">
+        <div class="form-group">
+            <label for="name">氏名</label>
+            <!-- th:field="*{name}" は registerForm.name プロパティにこの入力欄をバインド。
+                 GETリクエスト時は初期値、POST失敗時は入力し直した値が自動的に表示される -->
+            <input type="text" id="name" th:field="*{name}">
+            <!-- name プロパティにバリデーションエラーがあればメッセージを表示 -->
+            <p class="field-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></p>
+        </div>
+        <div class="form-group">
+            <label for="email">メールアドレス</label>
+            <!-- email プロパティにバインド -->
+            <input type="email" id="email" th:field="*{email}">
+            <p class="field-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></p>
+        </div>
+        <div class="form-group">
+            <label for="password">パスワード（8文字以上）</label>
+            <!-- password プロパティにバインド -->
+            <input type="password" id="password" th:field="*{password}">
+            <p class="field-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></p>
+        </div>
+        <!-- 登録ボタン。押すとフォーム内容がPOST送信される -->
+        <button type="submit" class="btn btn-primary">登録する</button>
+    </form>
+
+    <!-- ログインページへの導線リンク -->
+    <p>既にアカウントをお持ちの方は <a th:href="@{/login}">ログイン</a></p>
+</main>
+
+<!-- 共通フッターフラグメントを差し込む -->
+<div th:replace="~{fragments/layout :: footer}"></div>
+</body>
+</html>

@@ -1,0 +1,10 @@
+target/
+*.class
+*.db
+*.db-journal
+*.log
+.idea/
+*.iml
+.vscode/
+HELP.md
+pass.txt

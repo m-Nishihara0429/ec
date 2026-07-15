@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<!-- xmlns:th を宣言することで、このHTML内で th:* というThymeleaf独自属性が使えるようになる -->
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <!-- 注文手続きページのタイトル -->
+    <title>ご注文手続き | Simple EC</title>
+    <!-- th:href="@{...}" はThymeleafのURL式構文。コンテキストパスを考慮したURLを生成する -->
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<!-- th:replace はこの要素そのものを、指定したフラグメント（共通部品）に置き換える。
+     ここでは fragments/layout.html の header フラグメント（ヘッダー・ナビ部分）を差し込んでいる -->
+<div th:replace="~{fragments/layout :: header}"></div>
+
+<main class="container">
+    <h1>ご注文手続き</h1>
+
+    <!-- th:if="${errorMessage}" は errorMessage 変数が存在（かつtrue相当）の場合のみこの要素を表示する条件分岐。
+         th:text="${errorMessage}" はその変数の値をこの要素のテキストとして描画する（エスケープされる） -->
+    <p class="alert-error" th:if="${errorMessage}" th:text="${errorMessage}"></p>
+
+    <!-- カート内商品の明細テーブル -->
+    <table class="table">
+        <thead>
+        <tr><th>商品</th><th>単価</th><th>数量</th><th>小計</th></tr>
+        </thead>
+        <tbody>
+        <!-- th:each="item : ${items}" はコントローラから渡された items コレクションを1件ずつループし、
+             ループのたびに <tr> ...</tr> を繰り返し描画する（item変数がループ内で使える） -->
+        <tr th:each="item : ${items}">
+            <!-- 商品名を表示 -->
+            <td th:text="${item.product.name}"></td>
+            <!-- #numbers.formatInteger(値, 最小整数桁, 区切り文字) はThymeleafの組み込みユーティリティ。
+                 3桁カンマ区切りに整形し、末尾に「円」を文字列連結している -->
+            <td th:text="${#numbers.formatInteger(item.product.price, 1, 'COMMA')} + '円'"></td>
+            <!-- 数量をそのまま表示 -->
+            <td th:text="${item.quantity}"></td>
+            <!-- item.subtotal() は単価×数量などを計算するメソッド呼び出し。結果をカンマ区切りで表示 -->
+            <td th:text="${#numbers.formatInteger(item.subtotal(), 1, 'COMMA')} + '円'"></td>
+        </tr>
+        </tbody>
+    </table>
+    <!-- 合計金額（total変数）を表示 -->
+    <p class="cart-total">合計: <strong th:text="${#numbers.formatInteger(total, 1, 'COMMA')} + '円'"></strong></p>
+
+    <!-- 配送先住所の入力フォーム。
+         th:action="@{/checkout}" は送信先URL、method="post" でPOST送信。
+         th:object="${checkoutForm}" はこのフォーム内で使う th:field のバインド先オブジェクト（フォームバックングオブジェクト）を指定する。
+         Spring Security使用時、Thymeleafは<form method="post">に自動的にCSRFトークンのhidden inputを差し込む（Spring Security連携のデフォルト動作） -->
+    <form th:action="@{/checkout}" th:object="${checkoutForm}" method="post" class="form">
+        <div class="form-group">
+            <label for="address">配送先住所</label>
+            <!-- th:field="*{address}" は th:object で指定した checkoutForm の address プロパティに
+                 このtextareaをバインドする。id/name/valueが自動生成され、入力値がフォームに反映される -->
+            <textarea id="address" th:field="*{address}" rows="3"></textarea>
+            <!-- #fields.hasErrors('address') は address プロパティにバリデーションエラーがあるかを判定。
+                 th:errors="*{address}" はそのプロパティのエラーメッセージを表示する -->
+            <p class="field-error" th:if="${#fields.hasErrors('address')}" th:errors="*{address}"></p>
+        </div>
+        <div class="form-group">
+            <label for="paymentMethod">お支払い方法</label>
+            <!-- paymentMethodsはコントローラーから渡された選択肢一覧(PaymentMethod.values())。
+                 pm.labelで日本語ラベルを表示する -->
+            <select id="paymentMethod" th:field="*{paymentMethod}">
+                <option th:each="pm : ${paymentMethods}" th:value="${pm}" th:text="${pm.label}"></option>
+            </select>
+            <p class="field-error" th:if="${#fields.hasErrors('paymentMethod')}" th:errors="*{paymentMethod}"></p>
+        </div>
+        <div class="form-group">
+            <label for="couponCode">クーポンコード（お持ちの方のみ）</label>
+            <input type="text" id="couponCode" th:field="*{couponCode}" placeholder="クーポンコードを入力">
+        </div>
+        <!-- 注文確定ボタン。押すとフォームがPOST送信される -->
+        <button type="submit" class="btn btn-primary">注文を確定する</button>
+    </form>
+</main>
+
+<!-- 共通フッターフラグメントを差し込む -->
+<div th:replace="~{fragments/layout :: footer}"></div>
+</body>
+</html>

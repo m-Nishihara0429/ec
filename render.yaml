@@ -1,0 +1,46 @@
+# Render Blueprint。Renderダッシュボードで「New > Blueprint」からこのリポジトリを選ぶと、
+# Webサービス（Dockerfileベース）とPostgreSQLデータベースをまとめて作成できる。
+# 参考: https://render.com/docs/blueprint-spec
+databases:
+  - name: ec-site-db
+    plan: free
+    databaseName: ec_site
+    user: ec_site
+
+services:
+  - type: web
+    name: ec-site
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      # SQLiteではなくapplication-postgres.propertiesを使わせるためのプロファイル切り替え
+      - key: SPRING_PROFILES_ACTIVE
+        value: postgres
+      # 以下4つはec-site-dbデータベースの接続情報を自動的に注入する
+      - key: DB_HOST
+        fromDatabase:
+          name: ec-site-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: ec-site-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: ec-site-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: ec-site-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: ec-site-db
+          property: password
+      # 以下2つはRenderダッシュボードのEnvironmentタブで実際の値を手動設定する（sync: falseのため
+      # render.yamlには値を書かず、必ず個別に強い値をセットしてから初回デプロイすること）
+      - key: MASTER_PASSWORD
+        sync: false
+      - key: REMEMBER_ME_KEY
+        sync: false

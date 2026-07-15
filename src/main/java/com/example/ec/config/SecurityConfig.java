@@ -1,0 +1,131 @@
+package com.example.ec.config;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+
+/**
+ * Spring Securityの設定クラス。認証・認可のルール、ログイン/ログアウト、
+ * remember-me（ログイン状態の保持）などWebセキュリティ全般をここで構成する。
+ * このクラス全体が「誰が・どのURLに・どんな条件でアクセスできるか」というアプリの
+ * セキュリティポリシーを定義する中核部分であり、initやログイン画面もここで結び付けられる。
+ */
+@Configuration // このクラスがSpringの設定クラス（Beanを定義するクラス）であることを示す
+@EnableWebSecurity // Spring SecurityのWebセキュリティ機能を有効化する（デフォルトのセキュリティ自動設定をこの設定で置き換える）
+public class SecurityConfig {
+
+    // remember-meクッキーの有効期間（秒）。60秒×60分×24時間×7日 = 1週間を表す
+    private static final int REMEMBER_ME_VALIDITY_SECONDS = 60 * 60 * 24 * 7; // 1週間
+
+    // ログイン時にユーザー情報を取得するためのサービス（rememberMeのuserDetailsServiceとしても使用）
+    private final CustomUserDetailsService userDetailsService;
+
+    // remember-meトークンの署名に使う鍵。application.propertiesの設定値から読み込む。
+    // アプリ起動のたびにランダムな鍵を生成すると、再起動するだけで
+    // 既存のremember-meクッキーが全て無効になってしまうため、
+    // 再起動をまたいでもクッキーが有効であり続けるように固定の設定値を使用している。
+    @Value("${app.remember-me.key}") // application.propertiesの app.remember-me.key の値をこのフィールドに注入する
+    private String rememberMeKey;
+
+    /**
+     * コンストラクタ。Spring DIによってCustomUserDetailsServiceが自動的に注入される。
+     * @param userDetailsService ログイン時のユーザー情報取得サービス
+     */
+    public SecurityConfig(CustomUserDetailsService userDetailsService) {
+        // フィールドに保持する
+        this.userDetailsService = userDetailsService;
+    }
+
+    /**
+     * パスワードのハッシュ化・照合に使うエンコーダーをBeanとして登録する。
+     * DataInitializerやユーザー登録処理でパスワードを保存する際、また
+     * ログイン時にSpring Securityが入力パスワードと保存済みハッシュを照合する際に使われる。
+     * @return BCryptアルゴリズムを使うPasswordEncoder
+     */
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        // BCrypt（ソルト付きの一方向ハッシュ関数）でパスワードをハッシュ化するエンコーダーを返す
+        return new BCryptPasswordEncoder();
+    }
+
+    /**
+     * URLごとのアクセス制御、ログイン/ログアウト、remember-meをまとめて設定するフィルターチェーン。
+     * Spring SecurityはHTTPリクエストをこのフィルターチェーンに通し、ここで定義したルールに従って
+     * 認証・認可の判定やログイン/ログアウト処理を行う。
+     * @param http HttpSecurityビルダー（Spring Securityが注入する設定用オブジェクト）
+     * @return 構築されたSecurityFilterChain
+     * @throws Exception 設定構築時に例外が発生した場合
+     */
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+            // URLパスごとに「誰がアクセスできるか」（認可ルール）を設定するブロック
+            .authorizeHttpRequests((AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry auth) -> auth
+                // レビュー投稿はログイン済み（一般ユーザー・管理者）のみ許可
+                // POST /products/{商品ID}/reviews に対して、USERまたはADMINロールを持つ場合のみ許可する
+                .requestMatchers(HttpMethod.POST, "/products/*/reviews").hasAnyRole("USER", "ADMIN")
+                // トップページ・商品閲覧・静的リソース・会員登録/ログイン関連は未ログインでも閲覧可
+                // permitAll()により、認証なし（未ログイン状態）でも以下のパスにはアクセスできる
+                .requestMatchers("/", "/products/**", "/css/**", "/js/**", "/img/**",
+                        "/register", "/login", "/error",
+                        "/forgot-password", "/reset-password",
+                        "/faq", "/contact").permitAll()
+                // 会員（ユーザー）管理はMASTERロールのみアクセス可。
+                // より広い範囲にマッチする「/admin/**」ルールより前に置く必要がある
+                // （authorizeHttpRequestsは上から順に最初にマッチしたルールが適用されるため）。
+                .requestMatchers("/admin/users/**").hasRole("MASTER")
+                // 管理画面はADMINロールのみアクセス可
+                // /admin/配下のすべてのパスは、ROLE_ADMINを持つユーザーだけがアクセスできる
+                // （ROLE_MASTERのユーザーはSecurityUserDetails側でROLE_ADMIN権限も付与されるためここも通過できる）
+                .requestMatchers("/admin/**").hasRole("ADMIN")
+                // マイページ・カート・購入手続きはログイン済みユーザーのみ
+                // /mypage/, /cart/, /checkout/配下は、USERまたはADMINロールを持つログイン済みユーザーのみアクセスできる
+                .requestMatchers("/mypage/**", "/cart/**", "/checkout/**").hasAnyRole("USER", "ADMIN")
+                // 上記以外は基本的に認証必須
+                // ここまでのどのルールにも一致しないリクエストは、ログイン済み（authenticated）であることを要求する
+                .anyRequest().authenticated()
+            )
+            // フォームベースのログイン機能を設定するブロック
+            .formLogin(form -> form
+                // ログインフォームを表示するページのURL（未認証で保護ページにアクセスするとここへリダイレクトされる）
+                .loginPage("/login")
+                // ログインフォームがPOST送信される先のURL（Spring Securityがここでユーザー名/パスワードを検証する）
+                .loginProcessingUrl("/login")
+                // ログイン成功時のリダイレクト先。第2引数falseは「元々アクセスしようとしていたURLがあればそちらを優先する」という意味
+                .defaultSuccessUrl("/", false)
+                // ログイン失敗時のリダイレクト先（?errorパラメータを付けてログイン画面にエラー表示させる）
+                .failureUrl("/login?error")
+                // ログインページ自体・ログイン処理URLへのアクセスは未認証でも許可する
+                .permitAll()
+            )
+            // ログアウト機能を設定するブロック
+            .logout(logout -> logout
+                // ログアウトを実行するURL（ここにアクセスするとセッション破棄などのログアウト処理が行われる）
+                .logoutUrl("/logout")
+                // ログアウト成功後のリダイレクト先（トップページ）
+                .logoutSuccessUrl("/")
+                // ログアウトURLへのアクセスは未認証でも許可する（誰でもログアウト操作を実行できる）
+                .permitAll()
+            )
+            // remember-me（ログイン状態を一定期間保持する「ログインを記憶する」機能）の設定。
+            // keyには固定の設定値を使い、有効期限は約1週間（REMEMBER_ME_VALIDITY_SECONDS）としている。
+            .rememberMe(rememberMe -> rememberMe
+                // remember-meトークンの署名に使う鍵。固定値を使うことで再起動後もクッキーの有効性を保つ
+                .key(rememberMeKey)
+                // remember-meトークンからユーザーを復元する際に使うUserDetailsService
+                .userDetailsService(userDetailsService)
+                // remember-meクッキーの有効期間（秒）。REMEMBER_ME_VALIDITY_SECONDS（1週間）を指定
+                .tokenValiditySeconds(REMEMBER_ME_VALIDITY_SECONDS)
+            );
+
+        // ここまでの設定を反映したSecurityFilterChainを構築して返す
+        return http.build();
+    }
+}

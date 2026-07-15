@@ -1,0 +1,36 @@
+<!-- 管理画面: 問い合わせ詳細ページ。1件分の送信内容を表示する（返信・ステータス変更などは行わない） -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>問い合わせ詳細 | Simple EC 管理画面</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div th:replace="~{fragments/layout :: header}"></div>
+
+<main class="container">
+    <div th:replace="~{fragments/admin_nav :: nav}"></div>
+
+    <h1>問い合わせ詳細</h1>
+
+    <div class="mypage-info">
+        <p><strong>受信日時:</strong> <span th:text="${#temporals.format(inquiry.createdAt, 'yyyy/MM/dd HH:mm')}"></span></p>
+        <p><strong>お名前:</strong> <span th:text="${inquiry.name}"></span></p>
+        <p><strong>メールアドレス:</strong> <span th:text="${inquiry.email}"></span></p>
+        <p><strong>件名:</strong> <span th:text="${inquiry.subject}"></span></p>
+        <p><strong>お問い合わせ内容:</strong></p>
+        <p th:text="${inquiry.message}"></p>
+    </div>
+
+    <form th:action="@{/admin/inquiries/{id}/delete(id=${inquiry.id})}" method="post" class="inline-form"
+          onsubmit="return confirm('この問い合わせを削除しますか？');">
+        <button type="submit" class="btn btn-danger">削除</button>
+    </form>
+
+    <a th:href="@{/admin/inquiries}" class="btn">一覧に戻る</a>
+</main>
+
+<div th:replace="~{fragments/layout :: footer}"></div>
+</body>
+</html>

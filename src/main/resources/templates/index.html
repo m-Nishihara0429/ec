@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<!-- Thymeleaf属性(th:*)を使うための名前空間宣言 -->
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <!-- トップページ（商品一覧）のタイトル -->
+    <title>商品一覧 | Simple EC</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <!-- 価格レンジスライダーの見た目・動作を制御するJavaScript -->
+    <script th:src="@{/js/price-range.js}" defer></script>
+</head>
+<body>
+<!-- 共通ヘッダーフラグメントを差し込む -->
+<div th:replace="~{fragments/layout :: header}"></div>
+
+<!-- 本文(.container)と左右のサイドレールをまとめる外枠。画面が狭い場合はレールがdisplay:noneで消え、本文だけが表示される -->
+<div class="page-shell">
+<!-- 左サイドレール：キャンペーンバナー（広い画面でのみ表示） -->
+<aside class="side-rail side-rail-left">
+    <div class="promo-banner">
+        <h3>今だけ全品送料無料</h3>
+        <p>期間限定で送料が無料になるキャンペーンを実施中です。この機会にぜひご利用ください。</p>
+    </div>
+</aside>
+
+<main class="container">
+    <!-- キーワード検索・価格帯・並び順を指定できる検索フォーム。method="get" なのでURLクエリパラメータとして送信される -->
+    <form th:action="@{/}" method="get" class="search-bar">
+        <!-- th:value="${keyword}" で現在の検索キーワードをそのまま入力欄に反映（検索後も入力値が消えないようにする） -->
+        <input type="text" name="keyword" th:value="${keyword}" placeholder="商品名・説明で検索">
+
+        <div class="price-range-group">
+            <label>価格</label>
+            <p class="price-range-values">
+                <!-- 実際の数値はJavaScript側(price-range.js)がスライダーの値を見てここに描画する -->
+                <span id="minPriceLabel"></span> &ndash; <span id="maxPriceLabel"></span>
+            </p>
+            <div class="price-range-slider">
+                <div class="price-range-track-bg"></div>
+                <div class="price-range-track-fill" id="priceRangeTrackFill"></div>
+                <!-- 最小価格スライダー。th:min/th:max はサーバー側で算出した価格帯の下限・上限。
+                     th:value は現在選択中の最小価格。三項演算子風の式 (条件 ? 真の値 : 偽の値) で、
+                     minPriceが未指定ならデフォルトでpriceFloor（下限）を使う -->
+                <input type="range" name="minPrice" id="minPriceRange"
+                       th:min="${priceFloor}" th:max="${priceCeil}"
+                       th:value="${minPrice != null ? minPrice : priceFloor}">
+                <!-- 最大価格スライダー。同様にmaxPriceが未指定ならpriceCeil（上限）を使う -->
+                <input type="range" name="maxPrice" id="maxPriceRange"
+                       th:min="${priceFloor}" th:max="${priceCeil}"
+                       th:value="${maxPrice != null ? maxPrice : priceCeil}">
+            </div>
+        </div>
+
+        <!-- 並び順の選択肢。sortValues（列挙型の全候補）をループしてoptionを生成し、
+             th:selected で現在選択中の並び順(sort)と一致するものだけを選択状態にする -->
+        <select name="sort">
+            <option th:each="s : ${sortValues}" th:value="${s}" th:text="${s.label}" th:selected="${s == sort}"></option>
+        </select>
+        <!-- 選択中のカテゴリIDをhiddenで保持し、検索実行時にも絞り込み条件として一緒に送信する -->
+        <input type="hidden" name="categoryId" th:value="${selectedCategoryId}">
+        <button type="submit" class="btn btn-primary">検索</button>
+        <!-- 条件クリア用リンク。クエリパラメータなしのトップページに戻る -->
+        <a th:href="@{/}" class="btn">条件クリア</a>
+    </form>
+
+    <div class="page-layout">
+        <aside class="sidebar">
+            <h3>カテゴリ</h3>
+            <ul class="category-list">
+                <!-- 「すべて」リンク。@{...}の中で複数のクエリパラメータ(keyword, minPrice, maxPrice, sort)を
+                     現在の検索条件を維持したまま引き継ぎつつ、categoryIdは指定しない＝全カテゴリ表示にする。
+                     th:classappend は条件がtrueのときだけCSSクラス'active'を追加で付与する属性 -->
+                <li><a th:href="@{/(keyword=${keyword}, minPrice=${minPrice}, maxPrice=${maxPrice}, sort=${sort})}"
+                       th:classappend="${selectedCategoryId == null} ? 'active'">すべて</a></li>
+                <!-- カテゴリ一覧をループしてリンクを生成 -->
+                <li th:each="category : ${categories}">
+                    <!-- 各カテゴリへのリンク。他の検索条件を維持しつつcategoryIdだけそのカテゴリのIDに切り替える -->
+                    <a th:href="@{/(categoryId=${category.id}, keyword=${keyword}, minPrice=${minPrice}, maxPrice=${maxPrice}, sort=${sort})}"
+                       th:text="${category.name}"
+                       th:classappend="${selectedCategoryId != null and selectedCategoryId == category.id} ? 'active'"></a>
+                </li>
+            </ul>
+        </aside>
+
+        <section class="content">
+            <h1>商品一覧</h1>
+            <!-- ページング対象の全件数（products はSpringの Page オブジェクト） -->
+            <p class="result-count" th:text="${products.totalElements} + '件'"></p>
+
+            <!-- 検索結果が0件の場合の案内メッセージ -->
+            <div th:if="${products.content.isEmpty()}">
+                <p>該当する商品が見つかりませんでした。</p>
+            </div>
+
+            <!-- 商品カードのグリッド表示。products.content（現在ページの商品リスト）を1件ずつループ -->
+            <div class="product-grid">
+                <div class="product-card" th:each="product : ${products.content}">
+                    <!-- 商品詳細ページへのリンク（カード全体がリンクになっている） -->
+                    <a th:href="@{/products/{id}(id=${product.id})}">
+                        <div class="product-thumb">
+                            <!-- 画像URLがある場合のみサムネイル画像を表示 -->
+                            <img th:if="${product.imageUrl != null and !product.imageUrl.isEmpty()}"
+                                 th:src="${product.imageUrl}" alt="">
+                            <!-- 画像がない場合は「No Image」プレースホルダーを表示 -->
+                            <div th:unless="${product.imageUrl != null and !product.imageUrl.isEmpty()}" class="no-image">No Image</div>
+                        </div>
+                        <!-- 商品名 -->
+                        <h3 th:text="${product.name}"></h3>
+                        <!-- 価格をカンマ区切りで表示 -->
+                        <p class="price" th:text="${#numbers.formatInteger(product.price, 1, 'COMMA')} + '円'"></p>
+                        <!-- ratings（商品IDをキーとした平均評価のMap）にこの商品のエントリがある場合のみ星評価を表示 -->
+                        <p class="rating" th:if="${ratings.get(product.id) != null}"
+                           th:text="'★' + ${#numbers.formatDecimal(ratings.get(product.id), 1, 1)}"></p>
+                        <!-- 在庫が0の場合は「在庫切れ」ラベルを表示 -->
+                        <p class="stock" th:if="${product.stock == 0}">在庫切れ</p>
+                    </a>
+                </div>
+            </div>
+
+            <!-- ページ数が2以上ある場合のみページネーション（ページ番号リンク群）を表示 -->
+            <div class="pagination" th:if="${products.totalPages > 1}">
+                <!-- #numbers.sequence(0, totalPages-1) で 0からtotalPages-1までの連番を生成し、
+                     ページ番号ボタンをループで描画。iはページのインデックス(0始まり) -->
+                <a th:each="i : ${#numbers.sequence(0, products.totalPages - 1)}"
+                   th:href="@{/(categoryId=${selectedCategoryId}, keyword=${keyword}, minPrice=${minPrice}, maxPrice=${maxPrice}, sort=${sort}, page=${i})}"
+                   th:text="${i + 1}"
+                   th:classappend="${i == products.number} ? 'active'"></a>
+            </div>
+        </section>
+    </div>
+</main>
+
+<!-- 右サイドレール：おすすめ商品（広い画面でのみ表示） -->
+<aside class="side-rail side-rail-right">
+    <div class="recommend-box">
+        <h3>おすすめ商品</h3>
+        <ul class="recommend-list">
+            <li class="recommend-item" th:each="p : ${recommendedProducts}">
+                <a th:href="@{/products/{id}(id=${p.id})}" class="recommend-link">
+                    <span class="recommend-thumb">
+                        <img th:if="${p.imageUrl != null and !p.imageUrl.isEmpty()}" th:src="${p.imageUrl}" alt="">
+                    </span>
+                    <span class="recommend-info">
+                        <span class="name" th:text="${p.name}"></span>
+                        <span class="price" th:text="${#numbers.formatInteger(p.price, 1, 'COMMA')} + '円'"></span>
+                    </span>
+                </a>
+            </li>
+        </ul>
+    </div>
+</aside>
+</div>
+
+<!-- 共通フッターフラグメントを差し込む -->
+<div th:replace="~{fragments/layout :: footer}"></div>
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!-- 管理画面: 商品一覧ページ。登録済み商品をテーブルで一覧表示し、編集・削除・新規登録への導線を提供する -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>商品管理 | Simple EC 管理画面</title>
+    <!-- th:href="@{/css/style.css}" … 静的CSSファイルへのリンクをコンテキストパス考慮で生成する -->
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<!-- 共通ヘッダー（fragments/layout.htmlのheaderフラグメント）をこの位置に丸ごと差し込む -->
+<div th:replace="~{fragments/layout :: header}"></div>
+
+<main class="container">
+    <!-- 管理画面共通のサブナビゲーション（ダッシュボード/商品/カテゴリ/注文の切り替えメニュー）を差し込む -->
+    <div th:replace="~{fragments/admin_nav :: nav}"></div>
+
+    <!-- ページタイトルと「新規登録」ボタンを横並びに配置するヘッダー領域 -->
+    <div class="page-header">
+        <h1>商品管理</h1>
+        <a th:href="@{/admin/products/new}" class="btn btn-primary">新規登録</a>
+    </div>
+
+    <table class="table">
+        <thead>
+        <tr><th>ID</th><th>商品名</th><th>カテゴリ</th><th>価格</th><th>在庫</th><th></th></tr>
+        </thead>
+        <tbody>
+        <!-- th:each="product : ${products.content}" … 商品ページング結果(Page)の中身(content)を1件ずつproduct変数に入れてループし、<tr>を繰り返し生成する -->
+        <tr th:each="product : ${products.content}">
+            <td th:text="${product.id}"></td>
+            <td th:text="${product.name}"></td>
+            <!-- 三項演算子: カテゴリが未設定(null)の場合は「-」を表示、設定済みならカテゴリ名を表示 -->
+            <td th:text="${product.category != null ? product.category.name : '-'}"></td>
+            <!-- #numbers.formatInteger(値, 最小整数桁数, 'COMMA') … 数値を3桁区切りカンマ付きの文字列に整形するThymeleafユーティリティ -->
+            <td th:text="${#numbers.formatInteger(product.price, 1, 'COMMA')} + '円'"></td>
+            <td th:text="${product.stock}"></td>
+            <td>
+                <!-- 編集画面へのリンク。@{...(id=${product.id})}はURLテンプレート中の{id}プレースホルダーをproduct.idで置換する -->
+                <a th:href="@{/admin/products/{id}/edit(id=${product.id})}">編集</a>
+                <!-- 削除は取り消しできないためonsubmitのconfirm()で確認ダイアログを出してからPOST送信する -->
+                <form th:action="@{/admin/products/{id}/delete(id=${product.id})}" method="post" class="inline-form"
+                      onsubmit="return confirm('この商品を削除しますか？');">
+                    <button type="submit" class="link-btn danger">削除</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+
+<!-- 共通フッターを差し込む -->
+<div th:replace="~{fragments/layout :: footer}"></div>
+</body>
+</html>

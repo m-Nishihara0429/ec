@@ -1,0 +1,32 @@
+<!-- マイページ: 会員情報（氏名）編集ページ。ログイン中ユーザー自身の情報のみを編集できる -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>会員情報編集 | Simple EC</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div th:replace="~{fragments/layout :: header}"></div>
+
+<main class="container narrow">
+    <h1>会員情報編集</h1>
+
+    <!-- th:object="${profileForm}" でフォームの入力値バインド対象を指定。以降の*{name}はprofileForm.nameを指す -->
+    <form th:action="@{/mypage/edit}" th:object="${profileForm}" method="post" class="form">
+        <div class="form-group">
+            <label for="name">氏名</label>
+            <!-- th:field="*{name}" でinputのid/name/valueをprofileForm.nameにバインドする。autofocusで画面表示時に自動フォーカス -->
+            <input type="text" id="name" th:field="*{name}" autofocus>
+            <!-- バリデーションエラーがあればエラーメッセージを表示 -->
+            <p class="field-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></p>
+        </div>
+        <button type="submit" class="btn btn-primary">更新する</button>
+    </form>
+
+    <p><a th:href="@{/mypage}">マイページに戻る</a></p>
+</main>
+
+<div th:replace="~{fragments/layout :: footer}"></div>
+</body>
+</html>

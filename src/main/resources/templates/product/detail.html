@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<!-- th:xmlns に加え、Spring Security連携用タグライブラリ sec:* を使うための名前空間も宣言している -->
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <!-- 商品名を含む動的なタイトル -->
+    <title th:text="${product.name} + ' | Simple EC'"></title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <!-- カート追加操作用のJavaScript -->
+    <script th:src="@{/js/cart.js}" defer></script>
+</head>
+<body>
+<!-- 共通ヘッダーフラグメントを差し込む -->
+<div th:replace="~{fragments/layout :: header}"></div>
+
+<main class="container">
+    <div class="product-detail">
+        <div class="product-detail-image">
+            <!-- 画像URLが存在し、かつ空文字でない場合のみ画像を表示する条件分岐 -->
+            <img th:if="${product.imageUrl != null and !product.imageUrl.isEmpty()}"
+                 th:src="${product.imageUrl}" alt="">
+            <!-- 上の条件がfalse（画像がない）場合は「No Image」プレースホルダーを表示 -->
+            <div th:unless="${product.imageUrl != null and !product.imageUrl.isEmpty()}" class="no-image large">No Image</div>
+        </div>
+        <div class="product-detail-info">
+            <!-- 商品名 -->
+            <h1 th:text="${product.name}"></h1>
+            <!-- カテゴリが設定されている場合のみカテゴリバッジを表示 -->
+            <p class="category-badge" th:if="${product.category != null}" th:text="${product.category.name}"></p>
+            <!-- 価格をカンマ区切りで表示 -->
+            <p class="price" th:text="${#numbers.formatInteger(product.price, 1, 'COMMA')} + '円'"></p>
+            <!-- レビュー件数が1件以上ある場合、平均評価（小数点1桁）と件数を表示 -->
+            <p class="rating-summary" th:if="${reviewCount > 0}"
+               th:text="'★' + ${#numbers.formatDecimal(averageRating, 1, 1)} + '（' + ${reviewCount} + '件のレビュー）'"></p>
+            <!-- レビューが0件の場合は代わりにその旨のメッセージを表示 -->
+            <p class="rating-summary" th:if="${reviewCount == 0}">レビューはまだありません</p>
+            <!-- 商品説明文 -->
+            <p class="description" th:text="${product.description}"></p>
+            <!-- 在庫数を表示 -->
+            <p class="stock-info" th:text="'在庫: ' + ${product.stock} + '点'"></p>
+
+            <!-- カート追加フォーム。
+                 sec:authorize="isAuthenticated()" はSpring Security連携属性で、
+                 現在のユーザーがログイン済みの場合のみこの要素をレンダリングする（未ログイン時はHTMLに出力すらされない）。
+                 th:if="${product.stock > 0}" は在庫がある場合のみ表示する条件（両方の条件を満たす必要がある） -->
+            <form th:action="@{/cart/add}" method="post" sec:authorize="isAuthenticated()" th:if="${product.stock > 0}">
+                <!-- どの商品を追加するかをhiddenで送信 -->
+                <input type="hidden" name="productId" th:value="${product.id}">
+                <label for="quantity">数量</label>
+                <!-- th:max="${product.stock}" で入力可能な最大数量を在庫数に制限 -->
+                <input type="number" id="quantity" name="quantity" value="1" min="1" th:max="${product.stock}">
+                <button type="submit" class="btn btn-primary">カートに追加</button>
+            </form>
+            <!-- 在庫が0の場合は「在庫がありません」のメッセージのみ表示 -->
+            <p th:if="${product.stock == 0}" class="out-of-stock">現在在庫がありません</p>
+            <!-- sec:authorize="!isAuthenticated()" は未ログイン時のみ表示。ログインを促す案内 -->
+            <p sec:authorize="!isAuthenticated()">
+                <a th:href="@{/login}">ログイン</a>するとカートに追加できます。
+            </p>
+        </div>
+    </div>
+
+    <section class="reviews-section">
+        <h2>レビュー</h2>
+
+        <!-- ログイン済みユーザーにのみレビュー投稿フォームを表示 -->
+        <div sec:authorize="isAuthenticated()" class="review-form-box">
+            <h3>レビューを投稿する</h3>
+            <!-- th:object="${reviewForm}" がこのフォーム内の th:field のバインド先。
+                 @{/products/{id}/reviews(id=${product.id})} で商品IDを埋め込んだ投稿先URLを生成 -->
+            <form th:action="@{/products/{id}/reviews(id=${product.id})}" th:object="${reviewForm}" method="post" class="form">
+                <div class="form-group">
+                    <label for="rating">評価</label>
+                    <!-- th:field="*{rating}" で reviewForm.rating にバインドされたセレクトボックス。星1〜5を選択させる -->
+                    <select id="rating" th:field="*{rating}">
+                        <option value="">選択してください</option>
+                        <option value="5">★5</option>
+                        <option value="4">★4</option>
+                        <option value="3">★3</option>
+                        <option value="2">★2</option>
+                        <option value="1">★1</option>
+                    </select>
+                    <!-- rating プロパティのバリデーションエラーを表示 -->
+                    <p class="field-error" th:if="${#fields.hasErrors('rating')}" th:errors="*{rating}"></p>
+                </div>
+                <div class="form-group">
+                    <label for="comment">コメント</label>
+                    <!-- reviewForm.comment にバインドされた任意コメント欄（必須ではないためエラー表示なし） -->
+                    <textarea id="comment" th:field="*{comment}" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary btn-small">投稿する</button>
+            </form>
+        </div>
+        <!-- 未ログイン時はレビュー投稿フォームの代わりにログイン案内を表示 -->
+        <p sec:authorize="!isAuthenticated()">
+            <a th:href="@{/login}">ログイン</a>するとレビューを投稿できます。
+        </p>
+
+        <!-- レビューが1件もない場合の案内表示 -->
+        <div th:if="${#lists.isEmpty(reviews)}">
+            <p>まだレビューがありません。</p>
+        </div>
+        <!-- レビューが1件以上ある場合のみ一覧を表示 -->
+        <ul class="review-list" th:unless="${#lists.isEmpty(reviews)}">
+            <!-- reviews コレクションを1件ずつループして各レビューを表示 -->
+            <li th:each="review : ${reviews}" class="review-item">
+                <!-- 星の数を表示 -->
+                <p class="review-rating" th:text="'★' + ${review.rating}"></p>
+                <!-- 投稿者名と投稿日を表示 -->
+                <p class="review-meta" th:text="${review.user.name} + ' - ' + ${#temporals.format(review.createdAt, 'yyyy/MM/dd')}"></p>
+                <!-- コメントが入力されている場合のみコメント本文を表示 -->
+                <p class="review-comment" th:if="${review.comment != null and !review.comment.isEmpty()}" th:text="${review.comment}"></p>
+            </li>
+        </ul>
+    </section>
+</main>
+
+<!-- 共通フッターフラグメントを差し込む -->
+<div th:replace="~{fragments/layout :: footer}"></div>
+</body>
+</html>

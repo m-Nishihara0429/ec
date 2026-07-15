@@ -1,0 +1,196 @@
+<!--
+    管理画面: ダッシュボード（トップページ）。
+    このページはコントローラー側で事前に集計された数値（合計、件数など）をモデル属性として受け取り、
+    それをただ並べて表示するだけの「集計結果ビュー」になっている。
+    集計計算そのもの（SQL集計やループ集計）はここでは行っておらず、
+    totalSales, productCount, pendingCount など、すでに計算済みの値がモデルに入っている前提。
+-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>ダッシュボード | Simple EC 管理画面</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div th:replace="~{fragments/layout :: header}"></div>
+
+<main class="container">
+    <div th:replace="~{fragments/admin_nav :: nav}"></div>
+
+    <h1>ダッシュボード</h1>
+
+    <!--
+        サマリーカード群（第1段）: 経営状況を一目で把握するための主要指標4つ。
+        - totalSales: キャンセル済みの注文を除いた売上合計金額（コントローラー側で算出済み）
+        - productCount / categoryCount / userCount: それぞれ商品・カテゴリ・会員の登録件数
+    -->
+    <div class="stat-grid">
+        <div class="stat-card">
+            <p class="stat-label">売上合計（キャンセル除く）</p>
+            <!-- #numbers.formatInteger で3桁カンマ区切りに整形し、末尾に「円」を文字列結合 -->
+            <p class="stat-value" th:text="${#numbers.formatInteger(totalSales, 1, 'COMMA')} + '円'"></p>
+        </div>
+        <div class="stat-card">
+            <p class="stat-label">商品数</p>
+            <p class="stat-value" th:text="${productCount} + '件'"></p>
+        </div>
+        <div class="stat-card">
+            <p class="stat-label">カテゴリ数</p>
+            <p class="stat-value" th:text="${categoryCount} + '件'"></p>
+        </div>
+        <div class="stat-card">
+            <p class="stat-label">会員数</p>
+            <p class="stat-value" th:text="${userCount} + '人'"></p>
+        </div>
+    </div>
+
+    <!--
+        注文ステータス内訳（第2段）: 全注文をステータス（受付中／発送済み／完了／キャンセル）ごとに
+        件数集計した結果を4枚のカードで表示する。それぞれ独立したモデル属性
+        （pendingCount, shippedCount, completedCount, cancelledCount）として渡されている。
+        これにより管理者は「今どれだけの注文が対応待ちか」を一目で確認できる。
+    -->
+    <h2>注文ステータス内訳</h2>
+    <div class="stat-grid">
+        <div class="stat-card">
+            <p class="stat-label">注文受付</p>
+            <p class="stat-value" th:text="${pendingCount} + '件'"></p>
+        </div>
+        <div class="stat-card">
+            <p class="stat-label">発送済み</p>
+            <p class="stat-value" th:text="${shippedCount} + '件'"></p>
+        </div>
+        <div class="stat-card">
+            <p class="stat-label">完了</p>
+            <p class="stat-value" th:text="${completedCount} + '件'"></p>
+        </div>
+        <div class="stat-card">
+            <p class="stat-label">キャンセル済み</p>
+            <p class="stat-value" th:text="${cancelledCount} + '件'"></p>
+        </div>
+    </div>
+
+    <!--
+        売上グラフ（第3段）: 売上推移とカテゴリ別の売上を棒グラフで確認できるようにする。
+        両グラフとも同じ期間（日別／週別／月別）タブで期間を切り替えられる（下のタブ1つで両方に反映される）。
+        高さはコントローラー側で渡されたmaxSalesPoint/maxCategorySales（期間内の最大値）を基準に
+        パーセント換算し、インラインstyleで棒の高さを決める（棒グラフ用の外部JSライブラリは使用していない）。
+    -->
+    <h2>売上分析（キャンセル除く）</h2>
+    <!--
+        集計単位（日別／週別／月別）を切り替えるタブ。リンク先はクエリパラメータperiodを変えるだけで、
+        同じ/adminページを再表示する。th:classappendでsalesPeriod（現在選択中の単位）と一致するタブに
+        activeクラスを付け、見た目上の選択状態を表す。下の「売上推移」「カテゴリ別売上」の両方が
+        このタブで選んだ期間に絞り込まれる。
+    -->
+    <div class="period-tabs">
+        <a th:href="@{/admin(period='daily')}" th:classappend="${salesPeriod == 'daily'} ? 'active'"
+           class="period-tab">日別（直近14日間）</a>
+        <a th:href="@{/admin(period='weekly')}" th:classappend="${salesPeriod == 'weekly'} ? 'active'"
+           class="period-tab">週別（直近12週間）</a>
+        <a th:href="@{/admin(period='monthly')}" th:classappend="${salesPeriod == 'monthly'} ? 'active'"
+           class="period-tab">月別（直近12ヶ月）</a>
+    </div>
+
+    <h3>売上推移</h3>
+    <div class="chart-card">
+        <!-- salesPointsが空になることは無い（コントローラー側で必ず期間分を0円埋めして渡す）が、念のため空表示にも対応 -->
+        <div th:if="${#lists.isEmpty(salesPoints)}">
+            <p>売上データがありません。</p>
+        </div>
+        <div class="bar-chart" th:unless="${#lists.isEmpty(salesPoints)}">
+            <!-- salesPointsを1本ずつpointに入れてループし、棒1本＝1日/1週/1ヶ月として描画する -->
+            <div class="bar-col" th:each="point : ${salesPoints}">
+                <!-- 棒の真上に、その区間の売上金額を3桁カンマ区切りで表示 -->
+                <p class="bar-value" th:text="${#numbers.formatInteger(point.total, 1, 'COMMA')}"></p>
+                <!--
+                    棒の高さ(%) = その区間の売上 ÷ 期間内最大売上 × 100。
+                    maxSalesPointが0（期間中まったく売上が無い）の場合はゼロ除算を避けて高さ0にする。
+                -->
+                <div class="bar"
+                     th:style="'height:' + ${maxSalesPoint > 0 ? (point.total * 100 / maxSalesPoint) : 0} + '%'"
+                     th:title="${point.label} + '：' + ${#numbers.formatInteger(point.total, 1, 'COMMA')} + '円'">
+                </div>
+                <!-- 棒の下に日付／週／年月のラベルを表示（ラベル文字列自体はサービス側で組み立て済み） -->
+                <p class="bar-label" th:text="${point.label}"></p>
+            </div>
+        </div>
+    </div>
+
+    <h3>カテゴリ別売上（上のタブで選んだ期間内）</h3>
+    <div class="chart-card">
+        <!-- 選んだ期間内に注文が1件もない、または全注文がキャンセル済みの場合はcategorySalesが空になりうる -->
+        <div th:if="${#lists.isEmpty(categorySales)}">
+            <p>売上データがありません。</p>
+        </div>
+        <div class="bar-chart" th:unless="${#lists.isEmpty(categorySales)}">
+            <!-- categorySalesを1カテゴリずつpointに入れてループし、棒1本＝1カテゴリとして描画する（売上金額の降順） -->
+            <div class="bar-col" th:each="point : ${categorySales}">
+                <p class="bar-value" th:text="${#numbers.formatInteger(point.total, 1, 'COMMA')}"></p>
+                <!-- 高さの考え方は売上推移グラフと同じで、最も売れているカテゴリを100%とした相対値 -->
+                <div class="bar bar-category"
+                     th:style="'height:' + ${maxCategorySales > 0 ? (point.total * 100 / maxCategorySales) : 0} + '%'"
+                     th:title="${point.label} + '：' + ${#numbers.formatInteger(point.total, 1, 'COMMA')} + '円'">
+                </div>
+                <p class="bar-label" th:text="${point.label}"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ページ下段は2カラムレイアウト: 左に「直近の注文」一覧、右サイドバーに「在庫僅少の商品」一覧 -->
+    <div class="page-layout">
+        <section class="content">
+            <h2>直近の注文</h2>
+            <!--
+                th:if="${#lists.isEmpty(recentOrders)}" … recentOrdersリストが空（0件）のときだけ
+                「注文はまだありません。」というメッセージを表示する（#lists.isEmptyはリストの空判定ユーティリティ）。
+            -->
+            <div th:if="${#lists.isEmpty(recentOrders)}">
+                <p>注文はまだありません。</p>
+            </div>
+            <!--
+                th:unless は th:if の逆で「条件がfalseのときだけ表示」する。
+                つまりrecentOrdersが空でない場合にのみこのテーブルを描画する（上のdivと排他的に切り替わる）。
+            -->
+            <table class="table" th:unless="${#lists.isEmpty(recentOrders)}">
+                <thead>
+                <tr><th>注文番号</th><th>注文者</th><th>注文日時</th><th>ステータス</th><th>合計金額</th><th></th></tr>
+                </thead>
+                <tbody>
+                <!-- recentOrders（直近数件に絞られた注文リスト）を1件ずつ表示。orders.htmlと同じ行構造 -->
+                <tr th:each="order : ${recentOrders}">
+                    <td th:text="'#' + ${order.id}"></td>
+                    <td th:text="${order.user.name}"></td>
+                    <td th:text="${#temporals.format(order.createdAt, 'yyyy/MM/dd HH:mm')}"></td>
+                    <td><span class="status-badge" th:text="${order.status.label}"></span></td>
+                    <td th:text="${#numbers.formatInteger(order.totalPrice, 1, 'COMMA')} + '円'"></td>
+                    <td><a th:href="@{/admin/orders/{id}(id=${order.id})}">詳細</a></td>
+                </tr>
+                </tbody>
+            </table>
+            <!-- 注文一覧ページ全体へのリンク（直近分だけでなく全件を見たいとき用） -->
+            <p><a th:href="@{/admin/orders}">注文管理へ &rarr;</a></p>
+        </section>
+
+        <aside class="sidebar">
+            <h2>在庫僅少の商品</h2>
+            <!-- lowStockProductsが空なら「在庫僅少の商品はありません。」を表示（在庫が十分なら何も警告しないという意図） -->
+            <div th:if="${#lists.isEmpty(lowStockProducts)}">
+                <p>在庫僅少の商品はありません。</p>
+            </div>
+            <!-- lowStockProductsが1件以上あるときだけ、しきい値を下回った商品をリスト表示して補充を促す -->
+            <ul class="category-list" th:unless="${#lists.isEmpty(lowStockProducts)}">
+                <li th:each="product : ${lowStockProducts}">
+                    <!-- 商品編集画面へのリンクテキストに、商品名と残り在庫数を文字列結合して表示する -->
+                    <a th:href="@{/admin/products/{id}/edit(id=${product.id})}"
+                       th:text="${product.name} + '（残り' + ${product.stock} + '）'"></a>
+                </li>
+            </ul>
+        </aside>
+    </div>
+</main>
+
+<div th:replace="~{fragments/layout :: footer}"></div>
+</body>
+</html>

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>よくある質問 | Simple EC</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div th:replace="~{fragments/layout :: header}"></div>
+
+<main class="container narrow">
+    <h1>よくある質問</h1>
+
+    <!-- FAQが1件も登録されていない場合の案内表示 -->
+    <p th:if="${#lists.isEmpty(faqs)}">現在よくある質問は登録されていません。</p>
+
+    <!-- FAQ一覧。display_order昇順に並んだ質問と回答をそのまま並べて表示する -->
+    <div th:unless="${#lists.isEmpty(faqs)}">
+        <div class="faq-item" th:each="faq : ${faqs}">
+            <p class="faq-question" th:text="'Q. ' + ${faq.question}"></p>
+            <p class="faq-answer" th:text="'A. ' + ${faq.answer}"></p>
+        </div>
+    </div>
+
+    <p>お探しの回答が見つからない場合は <a th:href="@{/contact}">お問い合わせフォーム</a> からご連絡ください。</p>
+</main>
+
+<div th:replace="~{fragments/layout :: footer}"></div>
+</body>
+</html>

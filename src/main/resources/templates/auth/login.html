@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<!-- Thymeleaf属性(th:*)を使うための名前空間宣言 -->
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <!-- ログインページのタイトル -->
+    <title>ログイン | Simple EC</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<!-- 共通ヘッダーフラグメントを差し込む -->
+<div th:replace="~{fragments/layout :: header}"></div>
+
+<main class="container narrow">
+    <h1>ログイン</h1>
+
+    <!-- ${param.xxx} はリクエストのクエリパラメータを参照するThymeleaf式。
+         Spring Securityのログイン処理側から ?registered のようなパラメータが付けてリダイレクトされてきた場合に表示する成功メッセージ -->
+    <p class="alert-success" th:if="${param.registered}">会員登録が完了しました。ログインしてください。</p>
+    <!-- パスワード再設定完了後のリダイレクトで ?resetDone が付いた場合に表示 -->
+    <p class="alert-success" th:if="${param.resetDone}">パスワードを再設定しました。新しいパスワードでログインしてください。</p>
+    <!-- Spring Securityの認証失敗時に ?error が付与されてリダイレクトされる。その場合にエラーメッセージを表示 -->
+    <p class="alert-error" th:if="${param.error}">メールアドレスまたはパスワードが正しくありません。</p>
+
+    <!-- ログインフォーム。Spring Securityのデフォルトのログイン処理(UsernamePasswordAuthenticationFilter)が
+         POST /login を処理するため、ここでは th:object は使わず通常のname属性でフィールドを定義している。
+         method="post" のためCSRFトークンのhidden inputが自動挿入される -->
+    <form th:action="@{/login}" method="post" class="form">
+        <div class="form-group">
+            <label for="username">メールアドレス</label>
+            <!-- Spring Securityの規約上、ユーザー名パラメータ名は既定で "username" -->
+            <input type="email" id="username" name="username" required autofocus>
+        </div>
+        <div class="form-group">
+            <label for="password">パスワード</label>
+            <!-- Spring Securityの規約上、パスワードパラメータ名は既定で "password" -->
+            <input type="password" id="password" name="password" required>
+        </div>
+        <div class="form-group form-check">
+            <!-- 「ログイン状態を保持する」チェックボックス（Remember-Me機能用） -->
+            <input type="checkbox" id="remember-me" name="remember-me">
+            <label for="remember-me">ログイン状態を保持する(1週間)</label>
+        </div>
+        <!-- ログインボタン -->
+        <button type="submit" class="btn btn-primary">ログイン</button>
+    </form>
+
+    <!-- パスワード再設定ページへのリンク -->
+    <p><a th:href="@{/forgot-password}">パスワードをお忘れですか？</a></p>
+    <!-- 新規登録ページへのリンク -->
+    <p>アカウントをお持ちでない方は <a th:href="@{/register}">新規登録</a></p>
+
+    <!-- 学習用EC向けのテストアカウント案内（本番では不要な情報） -->
+    <div class="hint-box">
+        <p>テストアカウント</p>
+        <p>管理者: admin@example.com / admin123</p>
+        <p>一般: user@example.com / user1234</p>
+    </div>
+</main>
+
+<!-- 共通フッターフラグメントを差し込む -->
+<div th:replace="~{fragments/layout :: footer}"></div>
+</body>
+</html>

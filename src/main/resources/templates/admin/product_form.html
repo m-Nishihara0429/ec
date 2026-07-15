@@ -1,0 +1,69 @@
+<!-- 管理画面: 商品登録・編集ページ。同じフォームをidの有無で「新規登録」「編集」の両方に使い回す -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>商品登録・編集 | Simple EC 管理画面</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div th:replace="~{fragments/layout :: header}"></div>
+
+<main class="container">
+    <div th:replace="~{fragments/admin_nav :: nav}"></div>
+
+    <!-- productForm.idがnullでなければ「編集」、nullなら「登録」とタイトルを出し分ける（三項演算子） -->
+    <h1 th:text="${productForm.id != null} ? '商品編集' : '商品登録'"></h1>
+
+    <!--
+        th:object="${productForm}" … このフォーム内で使う th:field="*{...}" のバインド対象オブジェクトを指定する。
+        以降の *{name} のようなアスタリスク式は productForm.name を意味するようになる。
+        th:action は登録・更新どちらもPOST /admin/products に送信し、サーバー側でidの有無を見て処理を分岐する想定。
+    -->
+    <form th:action="@{/admin/products}" th:object="${productForm}" method="post" class="form">
+        <!-- 編集時に既存商品のIDをhiddenで保持し、新規登録時は空のまま送信される -->
+        <input type="hidden" th:field="*{id}">
+        <div class="form-group">
+            <label for="name">商品名</label>
+            <!-- th:field="*{name}" … input要素のid/name/valueをproductForm.nameに自動バインドする -->
+            <input type="text" id="name" th:field="*{name}">
+            <!-- #fields.hasErrors('name') … name項目にバリデーションエラーがあるかを判定し、あればth:errorsでエラーメッセージを表示 -->
+            <p class="field-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></p>
+        </div>
+        <div class="form-group">
+            <label for="description">商品説明</label>
+            <textarea id="description" th:field="*{description}" rows="4"></textarea>
+        </div>
+        <div class="form-group">
+            <label for="price">価格（円）</label>
+            <input type="number" id="price" th:field="*{price}" min="0">
+            <p class="field-error" th:if="${#fields.hasErrors('price')}" th:errors="*{price}"></p>
+        </div>
+        <div class="form-group">
+            <label for="stock">在庫数</label>
+            <input type="number" id="stock" th:field="*{stock}" min="0">
+            <p class="field-error" th:if="${#fields.hasErrors('stock')}" th:errors="*{stock}"></p>
+        </div>
+        <div class="form-group">
+            <label for="imageUrl">画像URL</label>
+            <input type="text" id="imageUrl" th:field="*{imageUrl}" placeholder="https://...">
+        </div>
+        <div class="form-group">
+            <label for="categoryId">カテゴリ</label>
+            <!-- カテゴリ選択のプルダウン。th:fieldでproductForm.categoryIdにバインドされる -->
+            <select id="categoryId" th:field="*{categoryId}">
+                <option value="">未選択</option>
+                <!-- th:each="category : ${categories}" … コントローラーから渡された全カテゴリをoption要素として展開する -->
+                <option th:each="category : ${categories}"
+                        th:value="${category.id}"
+                        th:text="${category.name}"></option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">保存</button>
+        <a th:href="@{/admin/products}" class="btn">キャンセル</a>
+    </form>
+</main>
+
+<div th:replace="~{fragments/layout :: footer}"></div>
+</body>
+</html>

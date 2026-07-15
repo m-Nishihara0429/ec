@@ -1,0 +1,57 @@
+<!-- 管理画面: クーポン一覧ページ。登録済みクーポンをテーブルで一覧表示し、編集・削除・新規登録への導線を提供する -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>クーポン管理 | Simple EC 管理画面</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div th:replace="~{fragments/layout :: header}"></div>
+
+<main class="container">
+    <div th:replace="~{fragments/admin_nav :: nav}"></div>
+
+    <div class="page-header">
+        <h1>クーポン管理</h1>
+        <a th:href="@{/admin/coupons/new}" class="btn btn-primary">新規登録</a>
+    </div>
+
+    <table class="table">
+        <thead>
+        <tr><th>コード</th><th>割引</th><th>最低注文金額</th><th>利用回数</th><th>有効期間</th><th>状態</th><th></th></tr>
+        </thead>
+        <tbody>
+        <tr th:each="coupon : ${coupons}">
+            <td th:text="${coupon.code}"></td>
+            <!-- 割引方式に応じて「10%OFF」または「500円引き」のように表示を出し分ける -->
+            <td th:text="${coupon.discountType.name() == 'PERCENTAGE'} ? (${coupon.discountValue} + '%OFF') : (${#numbers.formatInteger(coupon.discountValue, 1, 'COMMA')} + '円引き')"></td>
+            <td th:text="${coupon.minOrderAmount > 0} ? (${#numbers.formatInteger(coupon.minOrderAmount, 1, 'COMMA')} + '円〜') : '制限なし'"></td>
+            <!-- 利用回数上限が設定されていれば「使用回数/上限」、無ければ「使用回数（無制限）」と表示する -->
+            <td th:text="${coupon.usageLimit != null} ? (${coupon.usedCount} + ' / ' + ${coupon.usageLimit}) : (${coupon.usedCount} + ' (無制限)')"></td>
+            <td>
+                <span th:if="${coupon.validFrom != null}" th:text="${#temporals.format(coupon.validFrom, 'yyyy/MM/dd')}"></span>
+                <span th:unless="${coupon.validFrom != null}">-</span>
+                〜
+                <span th:if="${coupon.validUntil != null}" th:text="${#temporals.format(coupon.validUntil, 'yyyy/MM/dd')}"></span>
+                <span th:unless="${coupon.validUntil != null}">-</span>
+            </td>
+            <td>
+                <span class="status-badge" th:if="${coupon.active}">有効</span>
+                <span class="status-badge" th:unless="${coupon.active}">無効</span>
+            </td>
+            <td>
+                <a th:href="@{/admin/coupons/{id}/edit(id=${coupon.id})}">編集</a>
+                <form th:action="@{/admin/coupons/{id}/delete(id=${coupon.id})}" method="post" class="inline-form"
+                      onsubmit="return confirm('このクーポンを削除しますか？');">
+                    <button type="submit" class="link-btn danger">削除</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+
+<div th:replace="~{fragments/layout :: footer}"></div>
+</body>
+</html>

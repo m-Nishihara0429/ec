@@ -1,0 +1,80 @@
+<!-- 管理画面: 会員管理ページ（マスター管理者専用）。全会員のロール変更・アカウント有効/無効化を行う -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>会員管理 | Simple EC 管理画面</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div th:replace="~{fragments/layout :: header}"></div>
+
+<main class="container">
+    <div th:replace="~{fragments/admin_nav :: nav}"></div>
+
+    <h1>会員管理</h1>
+    <p class="text-muted">会員のロール変更・アカウントの有効/無効化ができます（マスター管理者専用）。自分自身のロール変更・無効化はできません。</p>
+
+    <!-- th:if="${errorMessage}" … 自分自身を対象にしようとした場合などの業務ルール違反メッセージを表示する -->
+    <p class="alert-error" th:if="${errorMessage}" th:text="${errorMessage}"></p>
+
+    <table class="table">
+        <thead>
+        <tr><th>ID</th><th>氏名</th><th>メールアドレス</th><th>ロール</th><th>状態</th><th>登録日時</th><th></th></tr>
+        </thead>
+        <tbody>
+        <!-- th:each="u : ${users}" … 会員一覧を新着順に1件ずつuに入れてループ表示する -->
+        <tr th:each="u : ${users}">
+            <td th:text="${u.id}"></td>
+            <td th:text="${u.name}"></td>
+            <td th:text="${u.email}"></td>
+            <td>
+                <!-- 現在のロールをバッジで表示。マスター管理者は目立たせるためmaster修飾クラスを追加する -->
+                <span class="status-badge" th:classappend="${u.role.name() == 'ROLE_MASTER'} ? 'status-badge-master'"
+                      th:text="${u.role.label}"></span>
+            </td>
+            <td>
+                <!-- 有効/無効の状態バッジ。無効化されている場合は赤系のdisabled修飾クラスを追加する -->
+                <span class="status-badge" th:classappend="${!u.enabled} ? 'status-badge-disabled'"
+                      th:text="${u.enabled} ? '有効' : '無効'"></span>
+            </td>
+            <td th:text="${#temporals.format(u.createdAt, 'yyyy/MM/dd HH:mm')}"></td>
+            <td>
+                <!--
+                    自分自身の行にはロール変更・無効化の操作フォームを出さない
+                    （自分の権限を誤って落として管理不能になる、いわゆるロックアウトを防ぐため）。
+                    サーバー側（UserService#updateRole/#setEnabled）でも同じ自己保護チェックをしているため、
+                    ここは操作導線を隠すためのUI上の配慮であり、実際の保護はサーバー側で担保されている。
+                -->
+                <span th:if="${u.id == currentUserId}" class="text-muted">(自分)</span>
+                <div th:unless="${u.id == currentUserId}" class="user-row-actions">
+                    <!-- ロール変更フォーム。プルダウンで選び、現在のロールをth:selectedで初期選択状態にする -->
+                    <form th:action="@{/admin/users/{id}/role(id=${u.id})}" method="post" class="inline-form">
+                        <select name="role">
+                            <option th:each="r : ${roles}" th:value="${r}" th:text="${r.label}"
+                                    th:selected="${r == u.role}"></option>
+                        </select>
+                        <button type="submit" class="btn btn-primary btn-small">変更</button>
+                    </form>
+                    <!-- 有効/無効切り替えフォーム。現在有効なら「無効化」ボタン（危険操作なのでconfirmとdangerスタイル）、
+                         無効なら「有効化」ボタンを出し分ける -->
+                    <form th:if="${u.enabled}" th:action="@{/admin/users/{id}/enabled(id=${u.id})}" method="post"
+                          class="inline-form" onsubmit="return confirm('このユーザーを無効化しますか？ログインできなくなります。');">
+                        <input type="hidden" name="enabled" value="false">
+                        <button type="submit" class="btn btn-danger btn-small">無効化</button>
+                    </form>
+                    <form th:unless="${u.enabled}" th:action="@{/admin/users/{id}/enabled(id=${u.id})}" method="post"
+                          class="inline-form">
+                        <input type="hidden" name="enabled" value="true">
+                        <button type="submit" class="btn btn-primary btn-small">有効化</button>
+                    </form>
+                </div>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+
+<div th:replace="~{fragments/layout :: footer}"></div>
+</body>
+</html>

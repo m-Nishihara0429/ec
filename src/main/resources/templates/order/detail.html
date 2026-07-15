@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<!-- Thymeleaf属性(th:*)を使うための名前空間宣言 -->
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <!-- th:text をtitleタグに使い、注文IDを含む動的なタイトルを生成している -->
+    <title th:text="'注文詳細 #' + ${order.id} + ' | Simple EC'"></title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<!-- 共通ヘッダーフラグメントを差し込む -->
+<div th:replace="~{fragments/layout :: header}"></div>
+
+<main class="container">
+    <!-- 見出しにも注文IDを動的に埋め込む -->
+    <h1 th:text="'注文詳細 #' + ${order.id}"></h1>
+
+    <!-- エラーメッセージがある場合のみ表示（例: 存在しない注文番号を開こうとした場合など） -->
+    <p class="alert-error" th:if="${errorMessage}" th:text="${errorMessage}"></p>
+
+    <!-- 注文日時を整形して表示 -->
+    <p th:text="'注文日時: ' + ${#temporals.format(order.createdAt, 'yyyy/MM/dd HH:mm')}"></p>
+    <!-- 現在の注文ステータスのラベルを表示 -->
+    <p th:text="'ステータス: ' + ${order.status.label}"></p>
+    <!-- 支払い方法を表示 -->
+    <p th:text="'支払い方法: ' + ${order.paymentMethod.label}"></p>
+    <!-- 配送先住所を表示 -->
+    <p th:text="'配送先: ' + ${order.address}"></p>
+
+    <!-- この注文に含まれる商品明細のテーブル -->
+    <table class="table">
+        <thead>
+        <tr><th>商品</th><th>単価</th><th>数量</th><th>小計</th></tr>
+        </thead>
+        <tbody>
+        <!-- order.items（注文明細のコレクション）を1件ずつループ -->
+        <tr th:each="item : ${order.items}">
+            <!-- 商品名 -->
+            <td th:text="${item.product.name}"></td>
+            <!-- 注文時点の単価（item.price）をカンマ区切りで表示。注文後に商品価格が変わっても
+                 この注文明細に記録された当時の価格が表示される -->
+            <td th:text="${#numbers.formatInteger(item.price, 1, 'COMMA')} + '円'"></td>
+            <!-- 数量 -->
+            <td th:text="${item.quantity}"></td>
+            <!-- 小計 -->
+            <td th:text="${#numbers.formatInteger(item.subtotal(), 1, 'COMMA')} + '円'"></td>
+        </tr>
+        </tbody>
+    </table>
+    <!-- クーポンが適用された場合のみ、割引額を表示する -->
+    <p th:if="${order.discountAmount > 0}"
+       th:text="'クーポン割引: -' + ${#numbers.formatInteger(order.discountAmount, 1, 'COMMA')} + '円 (' + ${order.couponCode} + ')'"></p>
+    <!-- 注文全体の合計金額（割引適用後） -->
+    <p class="cart-total">合計: <strong th:text="${#numbers.formatInteger(order.totalPrice, 1, 'COMMA')} + '円'"></strong></p>
+
+    <!-- 注文ステータスが「PENDING（処理待ち）」の場合のみキャンセルフォームを表示する条件分岐。
+         order.status.name() は列挙型(enum)の定数名を文字列で取得している。
+         onsubmit の confirm() はブラウザ標準の確認ダイアログで、OKが押されたときだけ送信を続行する -->
+    <form th:if="${order.status.name() == 'PENDING'}" th:action="@{/mypage/orders/{id}/cancel(id=${order.id})}"
+          method="post" class="inline-form" onsubmit="return confirm('この注文をキャンセルします。よろしいですか？');">
+        <button type="submit" class="btn btn-danger">注文をキャンセル</button>
+    </form>
+
+    <!-- 注文履歴一覧へ戻るリンク -->
+    <a th:href="@{/mypage/orders}" class="btn">注文履歴に戻る</a>
+</main>
+
+<!-- 共通フッターフラグメントを差し込む -->
+<div th:replace="~{fragments/layout :: footer}"></div>
+</body>
+</html>
