@@ -4,6 +4,7 @@
     --color-primary: #2563eb;      /* メインカラー：リンクやボタンなどの基調色（青） */
     --color-primary-dark: #1d4ed8; /* メインカラーのhover時などに使う濃い色 */
     --color-danger: #dc2626;       /* 警告・エラー・在庫切れなどを表す赤色 */
+    --color-success: #16a34a;      /* 発送完了・お届け完了などを表す緑色 */
     --color-text: #1f2937;         /* 基本の本文文字色（濃いグレー） */
     --color-muted: #52525b;        /* 補足情報など目立たせたくないテキストの色 */
     --color-border: #e5e7eb;       /* カードや区切り線などに使う薄いボーダー色 */
@@ -700,6 +701,114 @@ main.container {
     background: var(--color-danger);
     border-color: var(--color-danger);
     color: #fff;
+}
+
+/* 注文履歴: 発送済みの注文バッジを目立たせる修飾クラス。 */
+.status-badge-shipped {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
+}
+
+/* 注文履歴: お届け完了(COMPLETED)の注文バッジを緑色にする修飾クラス。 */
+.status-badge-completed {
+    background: var(--color-success);
+    border-color: var(--color-success);
+    color: #fff;
+}
+
+/* 注文履歴: キャンセル済みの注文バッジを警告色にする修飾クラス。 */
+.status-badge-cancelled {
+    background: var(--color-danger);
+    border-color: var(--color-danger);
+    color: #fff;
+}
+
+/* Order tracker (Amazon風の配送状況トラッカー) */
+/* 「注文確定→発送済み→お届け完了」を横並びの丸(ステップ)と線でつなぎ、
+   現在地を一目で分かるようにする。CANCELLEDの場合はこのトラッカー自体を表示せず、
+   代わりに専用のキャンセル案内(.order-tracker-cancelled)を表示する。 */
+.order-tracker {
+    display: flex;
+    align-items: flex-start;
+    margin: 20px 0 28px;
+}
+
+/* トラッカーの1ステップ分（丸+ラベル）。中央揃えでラベルを丸の下に配置する。 */
+.tracker-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 0 0 auto;
+    width: 100px;
+}
+
+/* ステップ間をつなぐ線。デフォルトはグレーで「未到達」を表す。 */
+.tracker-line {
+    flex: 1 1 auto;
+    height: 3px;
+    background: var(--color-border);
+    margin-top: 17px; /* 丸(36px)の中心の高さに合わせる */
+}
+
+/* 通過済みのステップ間の線を塗りつぶし、進捗が視覚的に伝わるようにする。 */
+.tracker-line.done {
+    background: var(--color-success);
+}
+
+/* ステップの丸(円)部分。デフォルト(未到達)は薄いグレーの枠線とグレー文字。 */
+.tracker-dot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 2px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-muted);
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
+/* 現在進行中のステップの丸。メインカラーで縁取りして目立たせる。 */
+.tracker-step.active .tracker-dot {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+}
+
+/* 通過済みのステップの丸。緑で塗りつぶしてチェックマークを白文字で見せる。 */
+.tracker-step.done .tracker-dot {
+    background: var(--color-success);
+    border-color: var(--color-success);
+    color: #fff;
+}
+
+/* ステップラベルのテキスト。 */
+.tracker-label {
+    margin: 8px 0 0;
+    font-size: 0.82rem;
+    text-align: center;
+    color: var(--color-muted);
+}
+
+/* 現在地・通過済みのラベルは本文色にして目立たせる。 */
+.tracker-step.active .tracker-label,
+.tracker-step.done .tracker-label {
+    color: var(--color-text);
+    font-weight: 600;
+}
+
+/* キャンセル済み注文向けの案内ボックス（トラッカーの代わりに表示）。 */
+.order-tracker-cancelled {
+    margin: 20px 0 28px;
+    padding: 14px 16px;
+    background: #fef2f2;
+    border: 1px solid var(--color-danger);
+    border-radius: var(--radius);
+    color: var(--color-danger);
+    font-weight: 600;
 }
 
 /* 補足説明など、目立たせたくない小さめの灰色テキスト。 */

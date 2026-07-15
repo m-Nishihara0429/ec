@@ -21,8 +21,30 @@
 
     <!-- 注文日時を整形して表示 -->
     <p th:text="'注文日時: ' + ${#temporals.format(order.createdAt, 'yyyy/MM/dd HH:mm')}"></p>
-    <!-- 現在の注文ステータスのラベルを表示 -->
-    <p th:text="'ステータス: ' + ${order.status.label}"></p>
+
+    <!-- 配送状況をAmazon風の3ステップトラッカー（注文確定→発送済み→お届け完了）で視覚的に表示する。
+         stepIndexは現在のステータスがどのステップまで進んでいるかを表す(1=受付, 2=発送済み, 3=完了)。
+         CANCELLEDの場合はトラッカーを出さず、代わりに専用の案内ボックスを表示する。 -->
+    <div th:if="${order.status.name() != 'CANCELLED'}"
+         class="order-tracker"
+         th:with="statusName=${order.status.name()}, stepIndex=${statusName == 'PENDING' ? 1 : (statusName == 'SHIPPED' ? 2 : 3)}">
+        <div class="tracker-step" th:classappend="${stepIndex == 1} ? 'active' : (${stepIndex > 1} ? 'done' : '')">
+            <div class="tracker-dot" th:text="${stepIndex > 1} ? '✓' : '1'"></div>
+            <p class="tracker-label">注文確定</p>
+        </div>
+        <div class="tracker-line" th:classappend="${stepIndex > 1} ? 'done'"></div>
+        <div class="tracker-step" th:classappend="${stepIndex == 2} ? 'active' : (${stepIndex > 2} ? 'done' : '')">
+            <div class="tracker-dot" th:text="${stepIndex > 2} ? '✓' : '2'"></div>
+            <p class="tracker-label">発送済み</p>
+        </div>
+        <div class="tracker-line" th:classappend="${stepIndex > 2} ? 'done'"></div>
+        <div class="tracker-step" th:classappend="${stepIndex == 3} ? 'active done' : ''">
+            <div class="tracker-dot" th:text="${stepIndex == 3} ? '✓' : '3'"></div>
+            <p class="tracker-label">お届け完了</p>
+        </div>
+    </div>
+    <p th:if="${order.status.name() == 'CANCELLED'}" class="order-tracker-cancelled">この注文はキャンセルされました</p>
+
     <!-- 支払い方法を表示 -->
     <p th:text="'支払い方法: ' + ${order.paymentMethod.label}"></p>
     <!-- 配送先住所を表示 -->

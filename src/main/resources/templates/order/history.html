@@ -34,8 +34,10 @@
             <td th:text="'#' + ${order.id}"></td>
             <!-- #temporals.format(日時, パターン) はThymeleafの日時整形ユーティリティ -->
             <td th:text="${#temporals.format(order.createdAt, 'yyyy/MM/dd HH:mm')}"></td>
-            <!-- 注文ステータスのラベル（例: 処理中、発送済みなど）を表示 -->
-            <td><span class="status-badge" th:text="${order.status.label}"></span></td>
+            <!-- 注文ステータスのラベル（例: 処理中、発送済みなど）を表示。
+                 ステータスに応じて status-badge-shipped/completed/cancelled を追加し、色分けする -->
+            <td><span class="status-badge" th:text="${order.status.label}"
+                       th:classappend="${'status-badge-' + #strings.toLowerCase(order.status.name())}"></span></td>
             <!-- 合計金額をカンマ区切りで表示 -->
             <td th:text="${#numbers.formatInteger(order.totalPrice, 1, 'COMMA')} + '円'"></td>
             <!-- 詳細ページへのリンク。@{/mypage/orders/{id}(id=${order.id})} はURLテンプレートの

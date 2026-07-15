@@ -164,7 +164,8 @@
                     <td th:text="'#' + ${order.id}"></td>
                     <td th:text="${order.user.name}"></td>
                     <td th:text="${#temporals.format(order.createdAt, 'yyyy/MM/dd HH:mm')}"></td>
-                    <td><span class="status-badge" th:text="${order.status.label}"></span></td>
+                    <td><span class="status-badge" th:text="${order.status.label}"
+                               th:classappend="${'status-badge-' + #strings.toLowerCase(order.status.name())}"></span></td>
                     <td th:text="${#numbers.formatInteger(order.totalPrice, 1, 'COMMA')} + '円'"></td>
                     <td><a th:href="@{/admin/orders/{id}(id=${order.id})}">詳細</a></td>
                 </tr>

@@ -27,8 +27,10 @@
             <td th:text="${order.user.name}"></td>
             <!-- #temporals.format(日時, パターン) … 日付・時刻オブジェクトを指定書式の文字列に変換するThymeleafユーティリティ -->
             <td th:text="${#temporals.format(order.createdAt, 'yyyy/MM/dd HH:mm')}"></td>
-            <!-- order.status.label … 注文ステータスのEnumが持つ日本語表示名（例: 発送済み）を表示 -->
-            <td><span class="status-badge" th:text="${order.status.label}"></span></td>
+            <!-- order.status.label … 注文ステータスのEnumが持つ日本語表示名（例: 発送済み）を表示。
+                 ステータスに応じて status-badge-shipped/completed/cancelled を追加し、色分けする -->
+            <td><span class="status-badge" th:text="${order.status.label}"
+                       th:classappend="${'status-badge-' + #strings.toLowerCase(order.status.name())}"></span></td>
             <td th:text="${#numbers.formatInteger(order.totalPrice, 1, 'COMMA')} + '円'"></td>
             <!-- 注文詳細ページへのリンク。URLの{id}プレースホルダーをorder.idで置換する -->
             <td><a th:href="@{/admin/orders/{id}(id=${order.id})}">詳細</a></td>
