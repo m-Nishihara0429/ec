@@ -1099,6 +1099,23 @@ main.container {
     .sidebar {
         width: 100%;
     }
+    /* 商品一覧グリッドを、Amazonアプリのように1行あたり2列固定で表示する。
+       auto-fillだと200px minが収まらず1列になってしまうため、明示的に2列指定する。 */
+    .product-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px 12px;
+    }
+    /* カード内の余白・文字サイズを2列表示向けに少し詰める。 */
+    .product-card h3 {
+        font-size: 0.85rem;
+        margin: 8px 8px 2px;
+    }
+    .product-card .price,
+    .product-card .stock,
+    .product-card .rating {
+        margin-left: 8px;
+        margin-right: 8px;
+    }
 }
 
 /* Hamburger button */
