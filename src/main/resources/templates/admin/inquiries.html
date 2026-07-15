@@ -15,6 +15,9 @@
 
     <h1>問い合わせ管理</h1>
 
+    <!-- 削除失敗時（既に削除済み等）のエラーメッセージをフラッシュ属性から表示する -->
+    <p class="alert-error" th:if="${errorMessage}" th:text="${errorMessage}"></p>
+
     <p th:if="${#lists.isEmpty(inquiries)}">問い合わせはまだありません。</p>
 
     <table class="table" th:unless="${#lists.isEmpty(inquiries)}">

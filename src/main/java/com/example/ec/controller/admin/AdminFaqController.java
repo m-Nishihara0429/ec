@@ -4,10 +4,12 @@ import com.example.ec.dto.FaqForm;
 import com.example.ec.entity.Faq;
 import com.example.ec.service.FaqService;
 import jakarta.validation.Valid;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
  * 管理者専用：FAQ(よくある質問)の一覧表示・新規登録・編集・削除を担当するコントローラー。
@@ -90,14 +92,20 @@ public class AdminFaqController {
 
     /**
      * POST /admin/faqs/{id}/delete
-     * 指定したFAQを削除する。
+     * 指定したFAQを削除する。既に削除済み（二重送信等）の場合はDataAccessExceptionが
+     * 発生しうるため、生の500エラーを見せずエラーメッセージ付きで一覧画面に戻す。
      *
-     * @param id 削除対象のFAQ ID（URLパス変数）
+     * @param id                 削除対象のFAQ ID（URLパス変数）
+     * @param redirectAttributes 削除失敗時のエラーメッセージをフラッシュ属性として伝えるための機構
      * @return FAQ一覧画面へリダイレクト（"redirect:/admin/faqs"）
      */
     @PostMapping("/{id}/delete")
-    public String delete(@PathVariable Long id) {
-        faqService.deleteById(id);
+    public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            faqService.deleteById(id);
+        } catch (DataAccessException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "このFAQを削除できませんでした。既に削除済みの可能性があります。");
+        }
         return "redirect:/admin/faqs";
     }
 }

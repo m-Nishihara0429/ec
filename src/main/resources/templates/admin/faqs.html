@@ -18,6 +18,9 @@
         <a th:href="@{/admin/faqs/new}" class="btn btn-primary">新規登録</a>
     </div>
 
+    <!-- 削除失敗時（既に削除済み等）のエラーメッセージをフラッシュ属性から表示する -->
+    <p class="alert-error" th:if="${errorMessage}" th:text="${errorMessage}"></p>
+
     <table class="table">
         <thead><tr><th>表示順</th><th>質問</th><th></th></tr></thead>
         <tbody>

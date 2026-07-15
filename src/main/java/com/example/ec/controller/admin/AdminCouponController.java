@@ -5,10 +5,12 @@ import com.example.ec.entity.Coupon;
 import com.example.ec.entity.DiscountType;
 import com.example.ec.service.CouponService;
 import jakarta.validation.Valid;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
  * 管理者専用：クーポン（割引）の一覧表示・新規登録・編集・削除を担当するコントローラー。
@@ -110,14 +112,21 @@ public class AdminCouponController {
 
     /**
      * POST /admin/coupons/{id}/delete
-     * 指定したクーポンを削除する。
+     * 指定したクーポンを削除する。既に削除済み（二重送信等）や、注文から参照中で
+     * 削除できない場合はDataAccessExceptionが発生しうるため、生の500エラーを見せず
+     * エラーメッセージ付きで一覧画面に戻す。
      *
-     * @param id 削除対象のクーポンID（URLパス変数）
+     * @param id                 削除対象のクーポンID（URLパス変数）
+     * @param redirectAttributes 削除失敗時のエラーメッセージをフラッシュ属性として伝えるための機構
      * @return クーポン一覧画面へリダイレクト（"redirect:/admin/coupons"）
      */
     @PostMapping("/{id}/delete")
-    public String delete(@PathVariable Long id) {
-        couponService.deleteById(id);
+    public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            couponService.deleteById(id);
+        } catch (DataAccessException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "このクーポンを削除できませんでした。既に削除済みか、注文で使用されている可能性があります。");
+        }
         return "redirect:/admin/coupons";
     }
 }

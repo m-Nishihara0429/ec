@@ -6,12 +6,14 @@ import com.example.ec.entity.Product;
 import com.example.ec.service.CategoryService;
 import com.example.ec.service.ProductService;
 import jakarta.validation.Valid;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
  * 管理者専用：商品の一覧表示・新規登録・編集・削除を担当するコントローラー。
@@ -126,23 +128,37 @@ public class AdminProductController {
             model.addAttribute("categories", categoryService.findAll());
             return "admin/product_form";
         }
-        // サービス層で商品情報を保存する（新規登録／更新の判定も含めてサービス層が担当）
-        productService.save(form);
+        try {
+            // サービス層で商品情報を保存する（新規登録／更新の判定も含めてサービス層が担当）
+            productService.save(form);
+        } catch (IllegalArgumentException e) {
+            // カテゴリが編集中に削除された等でcategoryIdが無効な場合、エラーメッセージ付きでフォームを再表示する
+            model.addAttribute("categories", categoryService.findAll());
+            model.addAttribute("errorMessage", e.getMessage());
+            return "admin/product_form";
+        }
         // 保存後は商品一覧画面へリダイレクトする
         return "redirect:/admin/products";
     }
 
     /**
      * POST /admin/products/{id}/delete
-     * 指定した商品を削除する。
+     * 指定した商品を削除する。既に削除済み（二重送信等）や、注文・カートから参照中で
+     * 削除できない場合はDataAccessExceptionが発生しうるため、生の500エラーを見せず
+     * エラーメッセージ付きで一覧画面に戻す。
      *
-     * @param id 削除対象の商品ID（URLパス変数）
+     * @param id                 削除対象の商品ID（URLパス変数）
+     * @param redirectAttributes 削除失敗時のエラーメッセージをフラッシュ属性として伝えるための機構
      * @return 商品一覧画面へリダイレクト（"redirect:/admin/products"）
      */
     @PostMapping("/{id}/delete")
-    public String delete(@PathVariable Long id) {
-        // 指定されたIDの商品を削除する
-        productService.deleteById(id);
+    public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            // 指定されたIDの商品を削除する
+            productService.deleteById(id);
+        } catch (DataAccessException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "この商品を削除できませんでした。既に削除済みか、注文やカートで参照されている可能性があります。");
+        }
         // 削除後は商品一覧画面へリダイレクトする
         return "redirect:/admin/products";
     }

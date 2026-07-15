@@ -16,6 +16,9 @@
     <!-- productForm.idがnullでなければ「編集」、nullなら「登録」とタイトルを出し分ける（三項演算子） -->
     <h1 th:text="${productForm.id != null} ? '商品編集' : '商品登録'"></h1>
 
+    <!-- カテゴリが編集中に削除された等でcategoryIdが無効な場合のエラーメッセージを表示する -->
+    <p class="alert-error" th:if="${errorMessage}" th:text="${errorMessage}"></p>
+
     <!--
         th:object="${productForm}" … このフォーム内で使う th:field="*{...}" のバインド対象オブジェクトを指定する。
         以降の *{name} のようなアスタリスク式は productForm.name を意味するようになる。

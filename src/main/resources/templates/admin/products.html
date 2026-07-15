@@ -22,6 +22,9 @@
         <a th:href="@{/admin/products/new}" class="btn btn-primary">新規登録</a>
     </div>
 
+    <!-- 削除失敗時（既に削除済み・注文やカートで参照中等）のエラーメッセージをフラッシュ属性から表示する -->
+    <p class="alert-error" th:if="${errorMessage}" th:text="${errorMessage}"></p>
+
     <table class="table">
         <thead>
         <tr><th>ID</th><th>商品名</th><th>カテゴリ</th><th>価格</th><th>在庫</th><th></th></tr>

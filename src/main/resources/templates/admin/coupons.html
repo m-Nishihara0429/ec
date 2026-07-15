@@ -18,6 +18,9 @@
         <a th:href="@{/admin/coupons/new}" class="btn btn-primary">新規登録</a>
     </div>
 
+    <!-- 削除失敗時（既に削除済み・注文で使用中等）のエラーメッセージをフラッシュ属性から表示する -->
+    <p class="alert-error" th:if="${errorMessage}" th:text="${errorMessage}"></p>
+
     <table class="table">
         <thead>
         <tr><th>コード</th><th>割引</th><th>最低注文金額</th><th>利用回数</th><th>有効期間</th><th>状態</th><th></th></tr>

@@ -15,6 +15,9 @@
 
     <h1>カテゴリ管理</h1>
 
+    <!-- 削除失敗時（既に削除済み・商品から参照中等）のエラーメッセージをフラッシュ属性から表示する -->
+    <p class="alert-error" th:if="${errorMessage}" th:text="${errorMessage}"></p>
+
     <!-- カテゴリ一覧テーブル。th:eachでcategoriesリストをループし、1件ごとに1行を出力する -->
     <table class="table">
         <thead><tr><th>ID</th><th>カテゴリ名</th><th></th></tr></thead>

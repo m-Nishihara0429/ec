@@ -2,9 +2,11 @@ package com.example.ec.controller.admin;
 
 import com.example.ec.entity.Category;
 import com.example.ec.service.CategoryService;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
  * 管理者専用：カテゴリの一覧表示・登録・削除を担当するコントローラー。
@@ -59,14 +61,22 @@ public class AdminCategoryController {
     /**
      * POST /admin/categories/{id}/delete
      * 指定したカテゴリを削除する。
+     * 既に削除済み（二重送信等）や、商品から参照中で削除できない場合はDataAccessExceptionが
+     * 発生しうるため、生の500エラーを見せずエラーメッセージ付きで一覧画面に戻す。
      *
-     * @param id 削除するカテゴリのID（URLパス変数）
+     * @param id                 削除するカテゴリのID（URLパス変数）
+     * @param redirectAttributes 削除失敗時のエラーメッセージをフラッシュ属性として伝えるための機構
      * @return カテゴリ一覧画面へリダイレクト（"redirect:/admin/categories"）
      */
     @PostMapping("/{id}/delete")
-    public String delete(@PathVariable Long id) {
-        // 指定されたIDのカテゴリを削除する
-        categoryService.deleteById(id);
+    public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            // 指定されたIDのカテゴリを削除する
+            categoryService.deleteById(id);
+        } catch (DataAccessException e) {
+            // 既に削除済み、または商品から参照中で削除できない等の理由をエラーメッセージとして表示する
+            redirectAttributes.addFlashAttribute("errorMessage", "このカテゴリを削除できませんでした。既に削除済みか、商品から参照されている可能性があります。");
+        }
         // 削除後はカテゴリ一覧画面へリダイレクトする
         return "redirect:/admin/categories";
     }
