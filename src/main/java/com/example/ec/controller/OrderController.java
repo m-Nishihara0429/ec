@@ -9,6 +9,7 @@ import com.example.ec.entity.User;
 import com.example.ec.service.CartService;
 import com.example.ec.service.OrderService;
 import jakarta.validation.Valid;
+import org.springframework.dao.DataAccessException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -103,6 +104,14 @@ public class OrderController {
             model.addAttribute("total", cartService.totalPrice(user));
             model.addAttribute("paymentMethods", PaymentMethod.values());
             model.addAttribute("errorMessage", e.getMessage());
+            return "order/checkout";
+        } catch (DataAccessException e) {
+            // 同時注文が競合した際のDBロック取得失敗（例: SQLiteのSQLITE_BUSY等）はユーザー側の入力ミスではないため、
+            // 生の500エラーを見せず「もう一度お試しください」という穏当なメッセージでチェックアウト画面に戻す
+            model.addAttribute("items", cartService.findByUser(user));
+            model.addAttribute("total", cartService.totalPrice(user));
+            model.addAttribute("paymentMethods", PaymentMethod.values());
+            model.addAttribute("errorMessage", "ただいま混み合っています。しばらくしてからもう一度お試しください。");
             return "order/checkout";
         }
         // 注文確定に成功したら、作成された注文IDを付けて注文完了画面へリダイレクトする
