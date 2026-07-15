@@ -17,6 +17,10 @@
 <main class="container">
     <h1>カート</h1>
 
+    <!-- th:if="${errorMessage}" は errorMessage 変数が存在（かつtrue相当）の場合のみこの要素を表示する条件分岐。
+         カート更新・削除で所有者不一致等の業務エラーが起きた場合、リダイレクト先のこの画面にフラッシュ属性として渡される -->
+    <p class="alert-error" th:if="${errorMessage}" th:text="${errorMessage}"></p>
+
     <!-- カート内商品が0件の場合のみこのブロックを表示（空カートの案内） -->
     <div th:if="${#lists.isEmpty(items)}">
         <p>カートに商品がありません。</p>

@@ -58,16 +58,23 @@ public class CartService {
 
     /**
      * 指定したカート明細の数量を、加算ではなく指定値そのものに置き換える。
+     * 他ユーザーのカート明細を操作できないよう、所有者チェックを行う。
      *
      * @param cartItemId 更新対象のカート明細ID
      * @param quantity   設定したい数量
-     * @throws IllegalArgumentException 指定したIDのカート明細が存在しない場合
+     * @param user       操作を要求しているユーザー（ログイン中の本人）
+     * @throws IllegalArgumentException 指定したIDのカート明細が存在しない、または他人のカート明細である場合
      */
     @Transactional // 検索と更新をまとめて1トランザクションにする
-    public void updateQuantity(Long cartItemId, int quantity) {
+    public void updateQuantity(Long cartItemId, int quantity, User user) {
         // IDでカート明細を検索し、存在しなければ例外を投げる
         CartItem item = cartItemRepository.findById(cartItemId)
                 .orElseThrow(() -> new IllegalArgumentException("カート商品が見つかりません: " + cartItemId));
+        // 他人のカート明細の場合は、存在自体を伏せるため「見つからない」として扱う
+        // （OrderService.cancelByUserと同様、注文/カートIDの存在を手がかりにした情報漏えいを防ぐ）
+        if (!item.getUser().getId().equals(user.getId())) {
+            throw new IllegalArgumentException("カート商品が見つかりません: " + cartItemId);
+        }
         // 数量を指定された値に置き換える（addToCartと違い加算ではなく上書き）
         item.setQuantity(quantity);
         // 変更を保存する
@@ -75,14 +82,23 @@ public class CartService {
     }
 
     /**
-     * カート明細を1件削除する。
+     * カート明細を1件削除する。他ユーザーのカート明細を操作できないよう、所有者チェックを行う。
      *
      * @param cartItemId 削除対象のカート明細ID
+     * @param user       操作を要求しているユーザー（ログイン中の本人）
+     * @throws IllegalArgumentException 指定したIDのカート明細が存在しない、または他人のカート明細である場合
      */
-    @Transactional // 削除処理を明示的にトランザクション化する
-    public void removeItem(Long cartItemId) {
-        // 指定IDのカート明細を削除する
-        cartItemRepository.deleteById(cartItemId);
+    @Transactional // 検索と削除をまとめて1トランザクションにする
+    public void removeItem(Long cartItemId, User user) {
+        // IDでカート明細を検索し、存在しなければ例外を投げる
+        CartItem item = cartItemRepository.findById(cartItemId)
+                .orElseThrow(() -> new IllegalArgumentException("カート商品が見つかりません: " + cartItemId));
+        // 他人のカート明細の場合は、存在自体を伏せるため「見つからない」として扱う
+        if (!item.getUser().getId().equals(user.getId())) {
+            throw new IllegalArgumentException("カート商品が見つかりません: " + cartItemId);
+        }
+        // 所有者チェックを通過したので削除する
+        cartItemRepository.delete(item);
     }
 
     /**

@@ -10,6 +10,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
 
@@ -81,20 +82,30 @@ public class CartController {
     /**
      * POST /cart/update
      * カート内商品の数量を変更する。0以下が指定された場合は削除として扱う。
+     * 他人のカート明細は操作できないよう、サービス層で所有者チェックが行われる。
      *
-     * @param cartItemId 数量を更新するカート内商品のID
-     * @param quantity   変更後の数量
+     * @param principal          ログイン中ユーザーの情報
+     * @param cartItemId         数量を更新するカート内商品のID
+     * @param quantity           変更後の数量
+     * @param redirectAttributes 所有者不一致等の業務エラーをフラッシュメッセージとして伝えるための機構
      * @return カート一覧へリダイレクト（"redirect:/cart"）
      */
     @PostMapping("/update")
-    public String update(@RequestParam Long cartItemId, @RequestParam int quantity) {
-        // 数量を0以下に更新しようとした場合は削除として扱う
-        if (quantity <= 0) {
-            // 数量が0以下ならカートからそのアイテムを削除する
-            cartService.removeItem(cartItemId);
-        } else {
-            // それ以外の場合は指定された数量に更新する
-            cartService.updateQuantity(cartItemId, quantity);
+    public String update(@AuthenticationPrincipal SecurityUserDetails principal,
+                          @RequestParam Long cartItemId, @RequestParam int quantity,
+                          RedirectAttributes redirectAttributes) {
+        try {
+            // 数量を0以下に更新しようとした場合は削除として扱う
+            if (quantity <= 0) {
+                // 数量が0以下ならカートからそのアイテムを削除する
+                cartService.removeItem(cartItemId, principal.getUser());
+            } else {
+                // それ以外の場合は指定された数量に更新する
+                cartService.updateQuantity(cartItemId, quantity, principal.getUser());
+            }
+        } catch (IllegalArgumentException e) {
+            // 存在しない、または他人のカート明細を指定された場合はエラーメッセージをフラッシュ属性に設定する
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
         // 処理後はカート一覧画面へリダイレクトする
         return "redirect:/cart";
@@ -103,14 +114,24 @@ public class CartController {
     /**
      * POST /cart/remove
      * カートから指定したカート内商品を削除する。
+     * 他人のカート明細は操作できないよう、サービス層で所有者チェックが行われる。
      *
-     * @param cartItemId 削除するカート内商品のID
+     * @param principal          ログイン中ユーザーの情報
+     * @param cartItemId         削除するカート内商品のID
+     * @param redirectAttributes 所有者不一致等の業務エラーをフラッシュメッセージとして伝えるための機構
      * @return カート一覧へリダイレクト（"redirect:/cart"）
      */
     @PostMapping("/remove")
-    public String remove(@RequestParam Long cartItemId) {
-        // 指定されたカート内商品IDのレコードをカートから削除する
-        cartService.removeItem(cartItemId);
+    public String remove(@AuthenticationPrincipal SecurityUserDetails principal,
+                          @RequestParam Long cartItemId,
+                          RedirectAttributes redirectAttributes) {
+        try {
+            // 指定されたカート内商品IDのレコードをカートから削除する
+            cartService.removeItem(cartItemId, principal.getUser());
+        } catch (IllegalArgumentException e) {
+            // 存在しない、または他人のカート明細を指定された場合はエラーメッセージをフラッシュ属性に設定する
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
         // 処理後はカート一覧画面へリダイレクトする
         return "redirect:/cart";
     }
