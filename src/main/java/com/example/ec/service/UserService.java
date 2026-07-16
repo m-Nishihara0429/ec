@@ -4,6 +4,7 @@ import com.example.ec.dto.RegisterForm;
 import com.example.ec.entity.Role;
 import com.example.ec.entity.User;
 import com.example.ec.repository.UserRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +17,9 @@ import java.util.List;
  * 平文のまま扱う・保存することがないようにしている点が重要な責務。
  */
 @Service // Springのサービス層Beanとして登録する
+// @Slf4j はLombokのアノテーションで、"log"という名前のLoggerフィールドを自動生成する。
+// パスワードなど機密値そのものは出力せず、誰が・何をしたかのみを記録する
+@Slf4j
 public class UserService {
 
     // ユーザー情報の取得・保存を担当するリポジトリ
@@ -56,6 +60,7 @@ public class UserService {
         // 同一アドレスとして扱う。表示用に元の入力の大文字小文字はそのまま保持する）
         String normalizedEmail = form.getEmail().trim();
         if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
+            log.warn("会員登録失敗（メールアドレス重複）: email={}", normalizedEmail);
             // 既に登録済みであれば例外を投げて処理を中断する
             throw new IllegalArgumentException("このメールアドレスは既に登録されています");
         }
@@ -70,7 +75,9 @@ public class UserService {
         // 新規登録ユーザーには常に一般ユーザー権限を付与する（管理者は別途手動で昇格させる想定）
         user.setRole(Role.ROLE_USER);
         // ユーザーをDBに保存し、保存後（IDが採番された）のエンティティを返す
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+        log.info("会員登録: userId={}, email={}", saved.getId(), saved.getEmail());
+        return saved;
     }
 
     /**
@@ -109,6 +116,7 @@ public class UserService {
                 .orElseThrow(() -> new IllegalArgumentException("ユーザーが見つかりません: " + userId));
         // 入力された現在のパスワード（平文）が、DBに保存されているハッシュ値と一致するかを検証する
         if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            log.warn("パスワード変更失敗（現在のパスワード不一致）: userId={}", userId);
             // 一致しなければ本人確認に失敗したとみなし例外を投げる
             throw new IllegalArgumentException("現在のパスワードが正しくありません");
         }
@@ -116,6 +124,7 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(newPassword));
         // 変更を保存する
         userRepository.save(user);
+        log.info("パスワード変更: userId={}", userId);
     }
 
     /**
@@ -153,6 +162,7 @@ public class UserService {
         target.setRole(newRole);
         // 変更を保存する
         userRepository.save(target);
+        log.info("会員ロール変更: targetUserId={}, newRole={}, actorUserId={}", targetUserId, newRole, actor.getId());
     }
 
     /**
@@ -179,5 +189,6 @@ public class UserService {
         target.setEnabled(enabled);
         // 変更を保存する
         userRepository.save(target);
+        log.info("会員有効/無効切り替え: targetUserId={}, enabled={}, actorUserId={}", targetUserId, enabled, actor.getId());
     }
 }

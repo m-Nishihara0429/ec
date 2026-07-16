@@ -14,6 +14,7 @@ Java（Spring Boot）で作った学習用のシンプルなECサイトです。
 | テンプレートエンジン | Thymeleaf（サーバーサイドレンダリング） |
 | DB | SQLite（`ecsite.db`、ファイルベース） |
 | 認証 | Spring Security（フォームログイン、BCrypt、Remember-Me） |
+| 監視 | Spring Boot Actuator（health / info / metrics） |
 
 ## 必須環境
 
@@ -70,7 +71,10 @@ $env:JAVA_HOME = "C:\Program Files\Java\jdk-23"
 .\mvnw.cmd test
 ```
 
-`OrderServiceTest` / `ProductServiceTest` で注文・在庫まわりのビジネスロジックをカバーしています。
+`OrderServiceTest` / `ProductServiceTest` などサービス層のテストで注文・在庫まわりのビジネスロジックを、
+`MypageControllerTest` / `AuthControllerTest` などControllerテストでパスワード変更・会員登録・パスワード再設定の
+正常系/異常系（バリデーションエラー、確認用パスワード不一致、CSRF拒否など）を、`LoginRateLimiterTest` で
+ログインのレート制限ロジックをそれぞれカバーしています。
 
 ## 主な機能
 
@@ -96,6 +100,31 @@ $env:JAVA_HOME = "C:\Program Files\Java\jdk-23"
 - `ROLE_USER`: 一般ユーザー
 - `ROLE_ADMIN`: 管理者（商品・カテゴリ・注文・FAQ・問い合わせの管理）
 - `ROLE_MASTER`: マスター管理者。ROLE_ADMINの操作に加えて会員管理（ロール変更・アカウント有効/無効化）が可能な最上位ロール
+
+## セキュリティ・運用機能
+
+**監視（Actuator）**
+- `/actuator/health` は未認証で公開（Renderなどのヘルスチェックから利用するため）。詳細情報
+  （DB接続状況等）はADMIN権限でログインしている場合のみ表示される（`show-details=when-authorized`）。
+- `/actuator/info` ・ `/actuator/metrics`（JVM/HTTPメトリクス）はADMIN権限のユーザーのみアクセス可能。
+- `env` ・ `beans` など機密情報を含みうるエンドポイントはそもそも有効化していない。
+
+**ロギング**
+- ログイン成否（IPアドレス付き）、パスワード変更・会員登録・注文確定/キャンセル・会員ロール変更などの
+  重要操作を`INFO`/`WARN`レベルで記録する（`logging.level.com.example.ec=INFO`）。
+- ログイン監査はSpring Securityの認証イベント（`AuthenticationSuccessEvent`等）を購読する
+  `SecurityAuditListener`が担い、remember-meによる自動再認証（フォーム入力を伴わない）は
+  ログイン試行として扱わないようにしている。
+
+**ログインのレート制限（ブルートフォース対策）**
+- 同一IPアドレスから15分間に5回ログインに失敗すると、以降のログイン試行を429（Too Many Requests）で
+  一時的に拒否する（`LoginRateLimiter` / `LoginRateLimitFilter`）。
+- インメモリ実装のため、複数インスタンスに水平スケールする場合は各インスタンスが個別にカウントする
+  （Redis等の共有ストアへの置き換えが必要）。また、IPアドレス単位の制限のため、NAT配下の
+  オフィスネットワークなど複数ユーザーが同一IPを共有する環境では、1人の失敗が同じIPを使う
+  他のユーザーのログインにも影響しうる点に注意（学習用途の単一インスタンス運用を前提とした簡易実装）。
+- 本番（Render等のリバースプロキシ配下）でクライアントの実IPを正しく取得できるよう、
+  `server.forward-headers-strategy=framework`を設定し、`X-Forwarded-For`ヘッダーから実IPを復元している。
 
 ## 既知の制約
 

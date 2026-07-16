@@ -12,6 +12,7 @@ import org.springframework.security.config.annotation.web.configurers.AuthorizeH
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
  * Spring Securityの設定クラス。認証・認可のルール、ログイン/ログアウト、
@@ -36,6 +37,9 @@ public class SecurityConfig {
     private final CustomUserDetailsService userDetailsService;
     // 現在有効なプロファイルを判定するために使用する（postgresプロファイル＝本番相当かどうかの判定用）
     private final Environment environment;
+    // ログインへのブルートフォース攻撃対策として、IPごとの失敗回数を保持するカウンター
+    // （LoginRateLimitFilter自体は@Componentにしていないため、ここでインスタンス化して使う）
+    private final LoginRateLimiter loginRateLimiter;
 
     // remember-meトークンの署名に使う鍵。application.propertiesの設定値から読み込む。
     // アプリ起動のたびにランダムな鍵を生成すると、再起動するだけで
@@ -49,10 +53,12 @@ public class SecurityConfig {
      * @param userDetailsService ログイン時のユーザー情報取得サービス
      * @param environment        有効なプロファイルを判定するためのSpring標準コンポーネント
      */
-    public SecurityConfig(CustomUserDetailsService userDetailsService, Environment environment) {
+    public SecurityConfig(CustomUserDetailsService userDetailsService, Environment environment,
+                           LoginRateLimiter loginRateLimiter) {
         // フィールドに保持する
         this.userDetailsService = userDetailsService;
         this.environment = environment;
+        this.loginRateLimiter = loginRateLimiter;
     }
 
     /**
@@ -105,6 +111,10 @@ public class SecurityConfig {
                         "/register", "/login", "/error",
                         "/forgot-password", "/reset-password",
                         "/faq", "/contact").permitAll()
+                // Actuatorのヘルスチェックのみ、PaaS（Render等）の死活監視のため未ログインでも許可する
+                .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                // metrics・info等その他のActuatorエンドポイントは内部情報を含むためADMIN権限のみ許可する
+                .requestMatchers("/actuator/**").hasRole("ADMIN")
                 // 会員（ユーザー）管理はMASTERロールのみアクセス可。
                 // より広い範囲にマッチする「/admin/**」ルールより前に置く必要がある
                 // （authorizeHttpRequestsは上から順に最初にマッチしたルールが適用されるため）。
@@ -151,7 +161,10 @@ public class SecurityConfig {
                 .userDetailsService(userDetailsService)
                 // remember-meクッキーの有効期間（秒）。REMEMBER_ME_VALIDITY_SECONDS（1週間）を指定
                 .tokenValiditySeconds(REMEMBER_ME_VALIDITY_SECONDS)
-            );
+            )
+            // ログインへのブルートフォース対策フィルターを、実際の認証処理(UsernamePasswordAuthenticationFilter)
+            // より前段に挟むことで、ブロック対象IPはパスワード照合に到達する前に429で拒否できる
+            .addFilterBefore(new LoginRateLimitFilter(loginRateLimiter), UsernamePasswordAuthenticationFilter.class);
 
         // ここまでの設定を反映したSecurityFilterChainを構築して返す
         return http.build();

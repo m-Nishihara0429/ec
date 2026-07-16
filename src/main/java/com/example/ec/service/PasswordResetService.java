@@ -4,6 +4,7 @@ import com.example.ec.entity.PasswordResetToken;
 import com.example.ec.entity.User;
 import com.example.ec.repository.PasswordResetTokenRepository;
 import com.example.ec.repository.UserRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +19,8 @@ import java.util.UUID;
  * 第三者による不正利用のリスクを下げている。
  */
 @Service // Springのサービス層Beanとして登録する
+// トークン文字列自体はログに残すと悪用されうるため出力しない
+@Slf4j
 public class PasswordResetService {
 
     // トークンの有効期限（分）。この時間を過ぎたトークンはvalidateToken内で失効扱いとなる
@@ -54,7 +57,10 @@ public class PasswordResetService {
         // メールアドレスからユーザーを検索し、存在しなければ例外を投げる。
         // メールアドレスは大文字小文字を区別しないため、findByEmailIgnoreCaseで検索する
         User user = userRepository.findByEmailIgnoreCase(email)
-                .orElseThrow(() -> new IllegalArgumentException("このメールアドレスは登録されていません"));
+                .orElseThrow(() -> {
+                    log.warn("パスワード再設定トークン発行失敗（未登録メールアドレス）: email={}", email);
+                    return new IllegalArgumentException("このメールアドレスは登録されていません");
+                });
 
         // そのユーザーが持つ古いトークンをすべて削除する（同時に有効なトークンを1つに保つため）
         tokenRepository.deleteByUser(user);
@@ -69,6 +75,7 @@ public class PasswordResetService {
         resetToken.setExpiresAt(LocalDateTime.now().plusMinutes(EXPIRY_MINUTES));
         // 新しいトークンをDBに保存する
         tokenRepository.save(resetToken);
+        log.info("パスワード再設定トークン発行: userId={}", user.getId());
         // 発行したトークン文字列を呼び出し元に返す（画面にリンクとして表示するため）
         return resetToken.getToken();
     }
@@ -86,11 +93,15 @@ public class PasswordResetService {
     public PasswordResetToken validateToken(String token) {
         // トークン文字列でエンティティを検索し、見つからなければ例外を投げる
         PasswordResetToken resetToken = tokenRepository.findByToken(token)
-                .orElseThrow(() -> new IllegalArgumentException("リンクが無効です。もう一度パスワード再設定をお試しください"));
+                .orElseThrow(() -> {
+                    log.warn("パスワード再設定トークン検証失敗（無効なトークン）");
+                    return new IllegalArgumentException("リンクが無効です。もう一度パスワード再設定をお試しください");
+                });
         // 有効期限（expiresAt）が現在時刻より前＝期限切れかどうかを判定する
         if (resetToken.getExpiresAt().isBefore(LocalDateTime.now())) {
             // 期限切れトークンはこの時点で削除し、二度と使えないようにする
             tokenRepository.delete(resetToken);
+            log.warn("パスワード再設定トークン検証失敗（期限切れ）: userId={}", resetToken.getUser().getId());
             // 呼び出し元には「期限切れ」であることを伝える例外を投げる
             throw new IllegalStateException("リンクの有効期限が切れています。もう一度パスワード再設定をお試しください");
         }
@@ -118,5 +129,6 @@ public class PasswordResetService {
         userRepository.save(user);
         // 使用済みのトークンを削除し、同じリンクの再利用を防ぐ
         tokenRepository.delete(resetToken);
+        log.info("パスワード再設定完了: userId={}", user.getId());
     }
 }

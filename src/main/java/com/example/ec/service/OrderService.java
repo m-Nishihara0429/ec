@@ -3,6 +3,7 @@ package com.example.ec.service;
 import com.example.ec.dto.SalesPoint;
 import com.example.ec.entity.*;
 import com.example.ec.repository.OrderRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +33,7 @@ import java.util.Map;
  * このクラスの重要な責務（cancelByUser / cancelByAdmin を参照）。</p>
  */
 @Service // Springのサービス層Beanとして登録する
+@Slf4j
 public class OrderService {
 
     // 注文（Order）のデータアクセスを担当するリポジトリ
@@ -139,6 +141,7 @@ public class OrderService {
         Order saved = orderRepository.save(order);
         // 注文が確定したので、対応するカートの中身を空にする
         cartService.clear(user);
+        log.info("注文確定: orderId={}, userId={}, totalPrice={}", saved.getId(), user.getId(), saved.getTotalPrice());
         // 保存済みの注文を返す
         return saved;
     }
@@ -432,6 +435,7 @@ public class OrderService {
         }
         // 権限チェック・状態チェックを通過したので、実際のキャンセル処理（在庫復元＋ステータス変更）を行う
         cancel(order);
+        log.info("注文キャンセル（ユーザー操作）: orderId={}, userId={}", orderId, user.getId());
     }
 
     /**
@@ -455,6 +459,7 @@ public class OrderService {
         }
         // 状態チェックを通過したので、実際のキャンセル処理（在庫復元＋ステータス変更）を行う
         cancel(order);
+        log.info("注文キャンセル（管理者操作）: orderId={}", orderId);
     }
 
     /**
