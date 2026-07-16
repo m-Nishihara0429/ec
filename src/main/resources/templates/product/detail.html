@@ -20,8 +20,15 @@
             <!-- 画像URLが存在し、かつ空文字でない場合のみ画像を表示する条件分岐 -->
             <img th:if="${product.imageUrl != null and !product.imageUrl.isEmpty()}"
                  th:src="${product.imageUrl}" alt="">
-            <!-- 上の条件がfalse（画像がない）場合は「No Image」プレースホルダーを表示 -->
-            <div th:unless="${product.imageUrl != null and !product.imageUrl.isEmpty()}" class="no-image large">No Image</div>
+            <!-- 上の条件がfalse（画像がない）場合は「No Image」プレースホルダー（アイコン+テキスト）を表示 -->
+            <div th:unless="${product.imageUrl != null and !product.imageUrl.isEmpty()}" class="no-image large">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                    <circle cx="8.5" cy="9.5" r="1.5" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M3 16l5-5 4 4 3-3 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>No Image</span>
+            </div>
         </div>
         <div class="product-detail-info">
             <!-- 商品名 -->

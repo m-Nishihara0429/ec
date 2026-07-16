@@ -13,6 +13,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -91,6 +93,25 @@ public class HomeController {
         Page<Product> recommended = productService.search(null, null, null, null,
                 ProductSort.NEWEST, PageRequest.of(0, 4));
         model.addAttribute("recommendedProducts", recommended.getContent());
+
+        // ページ下部の「カテゴリ別のおすすめ」棚表示用。カテゴリごとに新着順で最大4件を取得する。
+        // 商品が1件もないカテゴリは棚自体を表示しないため、あらかじめ除外しておく
+        // （LinkedHashMapを使い、カテゴリの登録順を表示順として保つ）
+        Map<Category, List<Product>> shelvesByCategory = new LinkedHashMap<>();
+        for (Category category : categoryService.findAll()) {
+            Page<Product> shelfProducts = productService.search(category.getId(), null, null, null,
+                    ProductSort.NEWEST, PageRequest.of(0, 4));
+            if (!shelfProducts.isEmpty()) {
+                shelvesByCategory.put(category, shelfProducts.getContent());
+            }
+        }
+        model.addAttribute("shelvesByCategory", shelvesByCategory);
+
+        // ページ最下部の横スクロール一覧表示用。閲覧履歴等の追跡は行っていないため、
+        // 「あなたへのおすすめ」のような個人化された見出しは使わず、新着順の全商品を横並びで見せる
+        Page<Product> browseStrip = productService.search(null, null, null, null,
+                ProductSort.NEWEST, PageRequest.of(0, 20));
+        model.addAttribute("browseStripProducts", browseStrip.getContent());
         // index.html（Thymeleafテンプレート）を表示する
         return "index";
     }

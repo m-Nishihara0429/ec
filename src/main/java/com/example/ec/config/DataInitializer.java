@@ -14,6 +14,8 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
+
 /**
  * アプリ起動時に初期データ（管理者・テストユーザー・カテゴリ・商品）を投入するクラス。
  * {@link CommandLineRunner} を実装しているため、起動完了直後に{@link #run}が自動実行される。
@@ -142,27 +144,33 @@ public class DataInitializer implements CommandLineRunner {
             saveProduct("Javaプログラミング入門", "初心者向けのJava学習書です。", 2800, 15, books);
             // 書籍カテゴリのサンプル商品2: Spring Boot解説書（価格3200円、在庫10点）
             saveProduct("Spring Boot実践ガイド", "Spring Bootでの開発手法を解説する一冊。", 3200, 10, books);
-            // 家電カテゴリのサンプル商品1: ワイヤレスイヤホン（価格8900円、在庫25点）
-            saveProduct("ワイヤレスイヤホン", "ノイズキャンセリング機能付き。", 8900, 25, electronics);
-            // 家電カテゴリのサンプル商品2: スマートウォッチ（価格15800円、在庫12点）
-            saveProduct("スマートウォッチ", "健康管理機能を搭載したスマートウォッチ。", 15800, 12, electronics);
-            // キッチン用品カテゴリのサンプル商品1: 電気ケトル（価格4500円、在庫20点）
-            saveProduct("電気ケトル", "1分で沸騰する高速電気ケトル。", 4500, 20, kitchen);
+            // 家電カテゴリのサンプル商品1: ワイヤレスイヤホン（価格8900円、在庫25点、商品画像あり）
+            saveProduct("ワイヤレスイヤホン", "ノイズキャンセリング機能付き。", 8900, 25, electronics, "/img/products/iyahon.png");
+            // 家電カテゴリのサンプル商品2: スマートウォッチ（価格15800円、在庫12点、商品画像あり）
+            saveProduct("スマートウォッチ", "健康管理機能を搭載したスマートウォッチ。", 15800, 12, electronics, "/img/products/smartwatch.png");
+            // キッチン用品カテゴリのサンプル商品1: 電気ケトル（価格4500円、在庫20点、商品画像あり）
+            saveProduct("電気ケトル", "1分で沸騰する高速電気ケトル。", 4500, 20, kitchen, "/img/products/denkiketoru.png");
             // キッチン用品カテゴリのサンプル商品2: ステンレスタンブラー（価格1800円、在庫40点、商品画像あり）
             saveProduct("ステンレスタンブラー", "保温・保冷に優れたタンブラー。", 1800, 40, kitchen, "/img/products/stainless-tumbler.png");
         }
 
         // 上記の初回投入より前に作られたDB（ecsite.db）には、まだ画像URLが設定されていない
-        // 「ステンレスタンブラー」レコードが残っている場合があるため、名前で検索して
+        // レコードが残っている場合があるため、商品名で画像パスを引き当てて
         // 画像URLが未設定なら補完する（何度起動しても安全な、べき等な補正処理）
+        Map<String, String> imagesByProductName = Map.of(
+                "ステンレスタンブラー", "/img/products/stainless-tumbler.png",
+                "ワイヤレスイヤホン", "/img/products/iyahon.png",
+                "スマートウォッチ", "/img/products/smartwatch.png",
+                "電気ケトル", "/img/products/denkiketoru.png"
+        );
         productRepository.findAll().stream()
-                // 商品名が「ステンレスタンブラー」のものだけに絞り込む
-                .filter(p -> "ステンレスタンブラー".equals(p.getName()))
                 // 画像URLが未設定（null または空文字）のものだけに絞り込む
                 .filter(p -> p.getImageUrl() == null || p.getImageUrl().isBlank())
+                // 商品名に対応する画像パスが定義されている商品だけに絞り込む
+                .filter(p -> imagesByProductName.containsKey(p.getName()))
                 // 該当する商品に画像URLを設定してDBに保存する
                 .forEach(p -> {
-                    p.setImageUrl("/img/products/stainless-tumbler.png");
+                    p.setImageUrl(imagesByProductName.get(p.getName()));
                     productRepository.save(p);
                 });
 

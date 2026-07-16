@@ -26,21 +26,27 @@
     <!-- ページ上部の固定ヘッダー：ロゴ・メインナビ・ログイン状態表示 -->
     <header class="site-header">
         <div class="container header-inner">
-            <!-- スマホ表示などで使うハンバーガーメニューの開閉ボタン（JS側でクリックを拾う） -->
-            <button type="button" class="hamburger-btn" id="menuOpenBtn" aria-label="メニューを開く" aria-controls="navDrawer" aria-expanded="false">
-                <span></span><span></span><span></span>
-            </button>
-            <!-- サイトロゴ。th:href="@{/}" はThymeleafのURL式で、コンテキストパスを考慮したトップページへのリンクを生成する -->
-            <a class="logo" th:href="@{/}">Simple EC</a>
-            <!-- PC表示用のメインナビゲーション -->
-            <nav class="main-nav">
-                <a th:href="@{/}">商品一覧</a>
-                <!-- sec:authorize="isAuthenticated()" … ログイン済みユーザーにだけこのタグを表示する（Spring Security拡張） -->
-                <a th:href="@{/cart}" sec:authorize="isAuthenticated()">カート</a>
-                <a th:href="@{/mypage}" sec:authorize="isAuthenticated()">マイページ</a>
-                <!-- hasRole('ADMIN') … ADMINロールを持つユーザーにだけ管理画面リンクを表示する -->
-                <a th:href="@{/admin}" sec:authorize="hasRole('ADMIN')">管理画面</a>
-            </nav>
+            <!-- ハンバーガー・ロゴ・PCナビをひとつのグループにまとめることで、header-innerの
+                 space-betweenが「左グループ」と「右グループ(auth-area)」の2要素間だけに働くようにする。
+                 4要素(ボタン/ロゴ/ナビ/認証エリア)に直接space-betweenをかけていた頃は、未ログイン時など
+                 ナビのリンク数が少ない場合に余白が不均等に見えてしまっていたための構造変更。 -->
+            <div class="header-left">
+                <!-- スマホ表示などで使うハンバーガーメニューの開閉ボタン（JS側でクリックを拾う） -->
+                <button type="button" class="hamburger-btn" id="menuOpenBtn" aria-label="メニューを開く" aria-controls="navDrawer" aria-expanded="false">
+                    <span></span><span></span><span></span>
+                </button>
+                <!-- サイトロゴ。th:href="@{/}" はThymeleafのURL式で、コンテキストパスを考慮したトップページへのリンクを生成する -->
+                <a class="logo" th:href="@{/}">Simple EC</a>
+                <!-- PC表示用のメインナビゲーション -->
+                <nav class="main-nav">
+                    <a th:href="@{/}">商品一覧</a>
+                    <!-- sec:authorize="isAuthenticated()" … ログイン済みユーザーにだけこのタグを表示する（Spring Security拡張） -->
+                    <a th:href="@{/cart}" sec:authorize="isAuthenticated()">カート</a>
+                    <a th:href="@{/mypage}" sec:authorize="isAuthenticated()">マイページ</a>
+                    <!-- hasRole('ADMIN') … ADMINロールを持つユーザーにだけ管理画面リンクを表示する -->
+                    <a th:href="@{/admin}" sec:authorize="hasRole('ADMIN')">管理画面</a>
+                </nav>
+            </div>
             <!-- ログイン状態に応じてユーザー名／ログアウトボタン、または ログイン／新規登録リンクを出し分ける領域 -->
             <div class="auth-area">
                 <span sec:authorize="isAuthenticated()" class="user-name">
