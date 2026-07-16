@@ -25,4 +25,8 @@ public class ChangePasswordForm {
     @NotBlank(message = "新しいパスワードを入力してください")
     @Size(min = 8, message = "パスワードは8文字以上で入力してください")
     private String newPassword;
+
+    // 新しいパスワードの確認用入力値。入力ミスを防ぐため、newPasswordと一致するかをコントローラー側で検証する
+    @NotBlank(message = "確認用パスワードを入力してください")
+    private String confirmNewPassword;
 }

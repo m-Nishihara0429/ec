@@ -114,6 +114,11 @@ public class MypageController {
         if (bindingResult.hasErrors()) {
             return "mypage/password";
         }
+        // 新しいパスワードと確認用パスワードが一致しない場合はエラーとして同じ画面を再表示する
+        if (!form.getNewPassword().equals(form.getConfirmNewPassword())) {
+            bindingResult.rejectValue("confirmNewPassword", "mismatch", "新しいパスワードと確認用パスワードが一致しません");
+            return "mypage/password";
+        }
         try {
             // サービス層で現在のパスワード照合・新パスワードへの変更を行う
             userService.changePassword(principal.getUser().getId(), form.getCurrentPassword(), form.getNewPassword());
