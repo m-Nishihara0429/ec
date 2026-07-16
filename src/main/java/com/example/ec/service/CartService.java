@@ -17,6 +17,11 @@ import java.util.List;
 @Service // このクラスをSpringのサービス層Beanとして登録する
 public class CartService {
 
+    // 1商品あたりカートに入れられる数量の上限。上限が無いと、負数や極端に大きい数量を
+    // 送りつけることで在庫の原子的減算(stock >= quantity)や注文合計金額の計算が破綻する
+    // （負数なら在庫が減るはずが増える、大きすぎる数量ならint演算がオーバーフローしうる）
+    private static final int MAX_QUANTITY_PER_ITEM = 99;
+
     // カート明細（CartItem）のデータアクセスを担当するリポジトリ
     private final CartItemRepository cartItemRepository;
 
@@ -43,15 +48,24 @@ public class CartService {
      * @param user     カートの持ち主
      * @param product  追加する商品
      * @param quantity 追加する数量
+     * @throws IllegalArgumentException 追加する数量が1未満、または加算後の数量が上限（{@value #MAX_QUANTITY_PER_ITEM}）を超える場合
      */
     // 既に同じ商品がカートにある場合は数量を加算し、なければ新規にカート明細を作成する
     @Transactional // 検索と保存を1つのトランザクションにまとめ、途中で失敗した場合に中途半端な状態が残らないようにする
     public void addToCart(User user, Product product, int quantity) {
+        // 数量が1未満（0や負数）の場合、在庫の原子的減算や注文合計金額の計算が破綻するため拒否する
+        if (quantity < 1) {
+            throw new IllegalArgumentException("数量は1個以上を指定してください");
+        }
         // ユーザー×商品の組み合わせで既存のカート明細を検索し、無ければ数量0の新規明細を作る
         CartItem item = cartItemRepository.findByUserAndProduct(user, product)
                 .orElseGet(() -> new CartItem(user, product, 0));
         // 既存数量に今回追加する数量を足し込む（新規の場合は0+quantity=quantityになる）
-        item.setQuantity(item.getQuantity() + quantity);
+        int newQuantity = item.getQuantity() + quantity;
+        if (newQuantity > MAX_QUANTITY_PER_ITEM) {
+            throw new IllegalArgumentException("1つの商品につきカートに入れられる数量は" + MAX_QUANTITY_PER_ITEM + "個までです");
+        }
+        item.setQuantity(newQuantity);
         // 変更後の明細を保存する（IDが無ければINSERT、あればUPDATEされる）
         cartItemRepository.save(item);
     }
@@ -63,10 +77,15 @@ public class CartService {
      * @param cartItemId 更新対象のカート明細ID
      * @param quantity   設定したい数量
      * @param user       操作を要求しているユーザー（ログイン中の本人）
-     * @throws IllegalArgumentException 指定したIDのカート明細が存在しない、または他人のカート明細である場合
+     * @throws IllegalArgumentException 指定したIDのカート明細が存在しない、他人のカート明細である場合、
+     *                                   または数量が1未満・上限（{@value #MAX_QUANTITY_PER_ITEM}）超過の場合
      */
     @Transactional // 検索と更新をまとめて1トランザクションにする
     public void updateQuantity(Long cartItemId, int quantity, User user) {
+        // 数量が範囲外（1未満または上限超過）の場合は拒否する（addToCartと同じ理由）
+        if (quantity < 1 || quantity > MAX_QUANTITY_PER_ITEM) {
+            throw new IllegalArgumentException("数量は1〜" + MAX_QUANTITY_PER_ITEM + "個の範囲で指定してください");
+        }
         // IDでカート明細を検索し、存在しなければ例外を投げる
         CartItem item = cartItemRepository.findById(cartItemId)
                 .orElseThrow(() -> new IllegalArgumentException("カート商品が見つかりません: " + cartItemId));

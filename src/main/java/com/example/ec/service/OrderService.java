@@ -371,14 +371,29 @@ public class OrderService {
 
     /**
      * 注文のステータスを変更する（管理者による発送処理・完了処理などを想定）。
+     * COMPLETED・CANCELLEDは終端状態のため、それらの注文のステータスはここでは変更できない
+     * （特にCANCELLEDからの変更を許すと、cancelByAdminで戻した在庫が二重に払い出される）。
+     * また、ここから直接CANCELLEDへ変更することも許可しない。キャンセルは専用の
+     * cancelByAdmin（在庫復元込みの処理）を経由する必要がある。それ以外の遷移
+     * （PENDING→SHIPPED→COMPLETEDなど）は制限しない。
      *
      * @param orderId 対象の注文ID
      * @param status  設定したい新しいステータス
+     * @throws IllegalStateException 対象注文が既にCOMPLETED・CANCELLEDの場合、
+     *                                またはstatusとしてCANCELLEDが指定された場合
      */
-    @Transactional // 検索と更新をまとめて1トランザクションにする
+    @Transactional // 検索・状態チェック・更新をまとめて1トランザクションにする
     public void updateStatus(Long orderId, OrderStatus status) {
         // IDで注文を取得する（存在しなければfindById内で例外）
         Order order = findById(orderId);
+        // 完了済み・キャンセル済みの注文は終端状態のため、ここからのステータス変更を許可しない
+        if (order.getStatus() == OrderStatus.COMPLETED || order.getStatus() == OrderStatus.CANCELLED) {
+            throw new IllegalStateException("完了済み・キャンセル済みの注文のステータスは変更できません");
+        }
+        // CANCELLEDへの変更は、在庫復元を伴う専用のキャンセル処理（cancelByAdmin）からのみ許可する
+        if (status == OrderStatus.CANCELLED) {
+            throw new IllegalStateException("キャンセルは注文詳細画面のキャンセル操作から行ってください");
+        }
         // ステータスを新しい値に更新する
         order.setStatus(status);
         // 変更を保存する

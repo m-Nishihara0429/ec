@@ -6,6 +6,7 @@ import com.example.ec.entity.Product;
 import com.example.ec.entity.User;
 import com.example.ec.service.CartService;
 import com.example.ec.service.ProductService;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -61,20 +62,33 @@ public class CartController {
     /**
      * POST /cart/add
      * 指定した商品を指定した数量だけカートに追加する。
+     * 数量が不正（1未満・上限超過）な場合はサービス層で例外が発生し、
+     * フラッシュメッセージとしてエラー内容をカート一覧画面に伝える。
      *
-     * @param principal ログイン中ユーザーの情報
-     * @param productId 追加する商品のID（フォームのリクエストパラメータ）
-     * @param quantity  追加する数量。未指定の場合は1個として扱う
+     * @param principal          ログイン中ユーザーの情報
+     * @param productId          追加する商品のID（フォームのリクエストパラメータ）
+     * @param quantity           追加する数量。未指定の場合は1個として扱う
+     * @param redirectAttributes 数量不正等の業務エラーをフラッシュメッセージとして伝えるための機構
      * @return カート一覧へリダイレクト（"redirect:/cart"）
      */
     @PostMapping("/add")
     public String add(@AuthenticationPrincipal SecurityUserDetails principal,
                        @RequestParam Long productId,
-                       @RequestParam(defaultValue = "1") int quantity) {
+                       @RequestParam(defaultValue = "1") int quantity,
+                       RedirectAttributes redirectAttributes) {
         // 追加対象の商品IDから商品エンティティを取得する
         Product product = productService.findById(productId);
-        // ログイン中ユーザーのカートに、取得した商品を指定数量分追加する
-        cartService.addToCart(principal.getUser(), product, quantity);
+        try {
+            // ログイン中ユーザーのカートに、取得した商品を指定数量分追加する
+            cartService.addToCart(principal.getUser(), product, quantity);
+        } catch (IllegalArgumentException e) {
+            // 数量が1未満・上限超過だった場合はエラーメッセージをフラッシュ属性に設定する
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        } catch (DataIntegrityViolationException e) {
+            // 同一ユーザー・同一商品の「カートに追加」がほぼ同時に2回送信され、
+            // CartItemのユニーク制約(uk_cart_items_user_product)に抵触した場合の受け皿
+            redirectAttributes.addFlashAttribute("errorMessage", "カートへの追加に失敗しました。もう一度お試しください。");
+        }
         // 処理後はカート一覧画面へリダイレクトする（PRGパターンで二重送信を防ぐ）
         return "redirect:/cart";
     }

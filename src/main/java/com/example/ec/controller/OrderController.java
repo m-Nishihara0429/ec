@@ -10,6 +10,7 @@ import com.example.ec.service.CartService;
 import com.example.ec.service.OrderService;
 import jakarta.validation.Valid;
 import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -104,6 +105,16 @@ public class OrderController {
             model.addAttribute("total", cartService.totalPrice(user));
             model.addAttribute("paymentMethods", PaymentMethod.values());
             model.addAttribute("errorMessage", e.getMessage());
+            return "order/checkout";
+        } catch (DataIntegrityViolationException e) {
+            // 同一ユーザーが同じクーポンで複数のチェックアウトリクエストをほぼ同時に送信した場合、
+            // OrderService側のexistsByUserAndCouponCodeAndStatusNotチェックをすり抜けて両方とも検証を通過することがあるが、
+            // Order側のユニーク制約(uk_orders_user_coupon)によりDB保存時にここで検知される。
+            // DataIntegrityViolationExceptionはDataAccessExceptionのサブクラスのため、下のcatchより先に置く必要がある
+            model.addAttribute("items", cartService.findByUser(user));
+            model.addAttribute("total", cartService.totalPrice(user));
+            model.addAttribute("paymentMethods", PaymentMethod.values());
+            model.addAttribute("errorMessage", "このクーポンは既にご利用済みです");
             return "order/checkout";
         } catch (DataAccessException e) {
             // 同時注文が競合した際のDBロック取得失敗（例: SQLiteのSQLITE_BUSY等）はユーザー側の入力ミスではないため、

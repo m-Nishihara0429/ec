@@ -1,0 +1,22 @@
+<!-- 汎用エラーページ。存在しないID(商品・注文・カテゴリ等)へのアクセスなど、
+     未処理のIllegalArgumentExceptionをGlobalExceptionHandlerが受け止めた際に表示する -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ページが見つかりません | Simple EC</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div th:replace="~{fragments/layout :: header}"></div>
+
+<main class="container">
+    <h1>ページが見つかりません</h1>
+    <p th:text="${message}"></p>
+    <p><a th:href="@{/}" class="btn btn-primary">トップページへ戻る</a></p>
+</main>
+
+<div th:replace="~{fragments/layout :: footer}"></div>
+</body>
+</html>

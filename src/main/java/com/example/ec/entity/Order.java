@@ -15,7 +15,12 @@ import java.util.List;
  * DB上のテーブル名は "orders"。
  */
 @Entity // JPAエンティティであることを示す
-@Table(name = "orders") // マッピング先のテーブル名を指定
+// (user_id, coupon_code) にユニーク制約を付け、同一ユーザーが同じクーポンで複数注文を持てないようDBレベルでも保証する。
+// OrderService.checkout の existsByUserAndCouponCodeAndStatusNot によるチェックは
+// 「読み取り→書き込み」の間に競合が起きうるため、この制約がその競合時の最終防波堤になる
+// （在庫チェック＋原子的減算、クーポン利用回数の原子的加算と同じ「最終的にはDBに守らせる」という考え方）。
+// couponCodeがnullの注文（クーポン未使用）同士はSQL上NULLが互いに等しいとみなされないため、この制約には抵触しない。
+@Table(name = "orders", uniqueConstraints = @UniqueConstraint(name = "uk_orders_user_coupon", columnNames = {"user_id", "coupon_code"}))
 @Getter // Lombok: 全フィールドのgetterを自動生成
 @Setter // Lombok: 全フィールドのsetterを自動生成
 @NoArgsConstructor // Lombok: 引数なしコンストラクタを自動生成

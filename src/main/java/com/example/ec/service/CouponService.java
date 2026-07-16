@@ -2,6 +2,7 @@ package com.example.ec.service;
 
 import com.example.ec.dto.CouponForm;
 import com.example.ec.entity.Coupon;
+import com.example.ec.entity.DiscountType;
 import com.example.ec.repository.CouponRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,7 +56,9 @@ public class CouponService {
      *
      * @param form 入力内容（コード・割引方式・割引額など）
      * @return 保存後のクーポンエンティティ
-     * @throws IllegalArgumentException クーポンコードが他クーポンと重複している場合
+     * @throws IllegalArgumentException クーポンコードが他クーポンと重複している場合、
+     *                                   割引方式が率なのに割引額が100を超える場合、
+     *                                   または有効期間の開始日が終了日より後の場合
      */
     @Transactional
     public Coupon save(CouponForm form) {
@@ -69,6 +72,17 @@ public class CouponService {
                 throw new IllegalArgumentException("このクーポンコードは既に使用されています");
             }
         });
+
+        // 割引方式が「率」の場合、100を超える値を許すとcalculateDiscountのint演算が桁あふれし、
+        // 割引額が注文合計金額を上回る（マイナスの支払額になる）事態を招きうるため上限を設ける
+        if (form.getDiscountType() == DiscountType.PERCENTAGE && form.getDiscountValue() > 100) {
+            throw new IllegalArgumentException("割引方式が「率」の場合、割引額は100以下で入力してください");
+        }
+        // 開始日が終了日より後だと、どんな日付でも有効期間内にならず誰も使えないクーポンになってしまう
+        if (form.getValidFrom() != null && form.getValidUntil() != null
+                && form.getValidFrom().isAfter(form.getValidUntil())) {
+            throw new IllegalArgumentException("有効期間の開始日は終了日より前の日付にしてください");
+        }
 
         coupon.setCode(normalizedCode);
         coupon.setDiscountType(form.getDiscountType());

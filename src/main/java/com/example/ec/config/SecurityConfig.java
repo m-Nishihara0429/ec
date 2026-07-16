@@ -1,8 +1,10 @@
 package com.example.ec.config;
 
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -24,8 +26,16 @@ public class SecurityConfig {
     // remember-meクッキーの有効期間（秒）。60秒×60分×24時間×7日 = 1週間を表す
     private static final int REMEMBER_ME_VALIDITY_SECONDS = 60 * 60 * 24 * 7; // 1週間
 
+    // application.propertiesに書かれているローカル開発用のプレースホルダー値。
+    // 本番相当のpostgresプロファイルでこの値のまま起動しようとした場合、
+    // 環境変数REMEMBER_ME_KEYの設定を忘れている（render.yamlのsync:falseコメントで
+    // 警告している設定を怠った）とみなしfail-fastする
+    private static final String DEFAULT_REMEMBER_ME_KEY = "ec-site-remember-me-key";
+
     // ログイン時にユーザー情報を取得するためのサービス（rememberMeのuserDetailsServiceとしても使用）
     private final CustomUserDetailsService userDetailsService;
+    // 現在有効なプロファイルを判定するために使用する（postgresプロファイル＝本番相当かどうかの判定用）
+    private final Environment environment;
 
     // remember-meトークンの署名に使う鍵。application.propertiesの設定値から読み込む。
     // アプリ起動のたびにランダムな鍵を生成すると、再起動するだけで
@@ -35,12 +45,30 @@ public class SecurityConfig {
     private String rememberMeKey;
 
     /**
-     * コンストラクタ。Spring DIによってCustomUserDetailsServiceが自動的に注入される。
+     * コンストラクタ。Spring DIによってCustomUserDetailsServiceとEnvironmentが自動的に注入される。
      * @param userDetailsService ログイン時のユーザー情報取得サービス
+     * @param environment        有効なプロファイルを判定するためのSpring標準コンポーネント
      */
-    public SecurityConfig(CustomUserDetailsService userDetailsService) {
+    public SecurityConfig(CustomUserDetailsService userDetailsService, Environment environment) {
         // フィールドに保持する
         this.userDetailsService = userDetailsService;
+        this.environment = environment;
+    }
+
+    /**
+     * 本番相当のpostgresプロファイルで、remember-meキーがローカル開発用のプレースホルダー値の
+     * ままになっていないかを起動時に検証する。公開リポジトリに含まれるこのデフォルト値のまま
+     * 本番運用すると、remember-meトークンの署名鍵が誰でも知っている値になってしまうため、
+     * render.yamlが要求している「デプロイ前に必ずREMEMBER_ME_KEYを個別設定する」運用を
+     * 起動失敗という形で強制する（ローカル開発（defaultプロファイル）では従来通り動作する）。
+     */
+    @PostConstruct
+    public void validateRememberMeKey() {
+        if (environment.matchesProfiles("postgres") && DEFAULT_REMEMBER_ME_KEY.equals(rememberMeKey)) {
+            throw new IllegalStateException(
+                    "本番プロファイル(postgres)では環境変数REMEMBER_ME_KEYに強力な値を設定してください。"
+                            + "デフォルト値のままだとremember-meトークンの署名鍵が公開リポジトリの値と同じになり危険です。");
+        }
     }
 
     /**

@@ -46,14 +46,22 @@ public class AdminCategoryController {
     /**
      * POST /admin/categories
      * 新しいカテゴリを登録する。
+     * 名前が空・文字数超過・重複の場合はサービス層で例外が発生し、
+     * フラッシュメッセージとしてエラー内容を一覧画面に伝える。
      *
-     * @param name 登録するカテゴリ名（フォームのリクエストパラメータ）
+     * @param name               登録するカテゴリ名（フォームのリクエストパラメータ）
+     * @param redirectAttributes 登録失敗時のエラーメッセージをフラッシュ属性として伝えるための機構
      * @return カテゴリ一覧画面へリダイレクト（"redirect:/admin/categories"）
      */
     @PostMapping
-    public String save(@RequestParam String name) {
-        // 指定された名前で新しいカテゴリエンティティを作成して保存する
-        categoryService.save(new Category(name));
+    public String save(@RequestParam String name, RedirectAttributes redirectAttributes) {
+        try {
+            // 指定された名前で新しいカテゴリエンティティを作成して保存する
+            categoryService.save(new Category(name));
+        } catch (IllegalArgumentException e) {
+            // 名前が空・文字数超過・重複だった場合、エラーメッセージをフラッシュ属性に設定する
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
         // 登録後はカテゴリ一覧画面へリダイレクトする（PRGパターンで二重送信を防ぐ）
         return "redirect:/admin/categories";
     }

@@ -205,4 +205,47 @@ class OrderServiceTest {
                 .isInstanceOf(IllegalStateException.class);
         verify(productService, never()).increaseStock(any(), anyInt());
     }
+
+    @Test
+    void updateStatus_通常の遷移は許可される() {
+        Order order = orderOf(user, OrderStatus.PENDING, product(10L, 1000));
+        when(orderRepository.findById(99L)).thenReturn(java.util.Optional.of(order));
+
+        orderService.updateStatus(99L, OrderStatus.SHIPPED);
+
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.SHIPPED);
+        verify(orderRepository).save(order);
+    }
+
+    @Test
+    void updateStatus_完了済み注文のステータスは変更できない() {
+        Order order = orderOf(user, OrderStatus.COMPLETED, product(10L, 1000));
+        when(orderRepository.findById(99L)).thenReturn(java.util.Optional.of(order));
+
+        assertThatThrownBy(() -> orderService.updateStatus(99L, OrderStatus.SHIPPED))
+                .isInstanceOf(IllegalStateException.class);
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    void updateStatus_キャンセル済み注文のステータスは変更できない() {
+        Order order = orderOf(user, OrderStatus.CANCELLED, product(10L, 1000));
+        when(orderRepository.findById(99L)).thenReturn(java.util.Optional.of(order));
+
+        assertThatThrownBy(() -> orderService.updateStatus(99L, OrderStatus.SHIPPED))
+                .isInstanceOf(IllegalStateException.class);
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    void updateStatus_CANCELLEDへの直接変更は拒否され在庫が戻らない() {
+        Order order = orderOf(user, OrderStatus.PENDING, product(10L, 1000));
+        when(orderRepository.findById(99L)).thenReturn(java.util.Optional.of(order));
+
+        assertThatThrownBy(() -> orderService.updateStatus(99L, OrderStatus.CANCELLED))
+                .isInstanceOf(IllegalStateException.class);
+        // 在庫復元を伴わないため、専用のキャンセル処理(cancelByAdmin)を経由させる必要がある
+        verify(productService, never()).increaseStock(any(), anyInt());
+        verify(orderRepository, never()).save(any());
+    }
 }

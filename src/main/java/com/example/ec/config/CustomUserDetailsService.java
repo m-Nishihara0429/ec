@@ -38,8 +38,11 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         // ログインフォームに入力されたメールアドレスでユーザーを検索し、
-        // 見つからない場合は認証失敗として例外を投げる
-        User user = userRepository.findByEmail(email)
+        // 見つからない場合は認証失敗として例外を投げる。
+        // メールアドレスは大文字小文字を区別しないため、findByEmailIgnoreCaseで検索する
+        // （"Alice@example.com"で登録したユーザーが"alice@example.com"でログインできないという
+        // 不整合を防ぐ）
+        User user = userRepository.findByEmailIgnoreCase(email)
                 // Optionalが空（該当ユーザーなし）の場合はUsernameNotFoundExceptionを送出する
                 .orElseThrow(() -> new UsernameNotFoundException("ユーザーが見つかりません: " + email));
         // 取得したUserエンティティをSpring Security用のUserDetailsにラップして返す

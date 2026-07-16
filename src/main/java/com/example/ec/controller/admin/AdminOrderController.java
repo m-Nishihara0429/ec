@@ -69,15 +69,24 @@ public class AdminOrderController {
     /**
      * POST /admin/orders/{id}/status
      * 注文のステータスを更新する（例: PENDING → SHIPPED など）。
+     * 完了済み・キャンセル済みの注文への変更や、CANCELLEDへの直接変更はサービス層で拒否され、
+     * フラッシュメッセージとしてエラー内容を注文詳細画面に伝える。
      *
-     * @param id     ステータスを変更する注文のID（URLパス変数）
-     * @param status 変更後のステータス（フォームのリクエストパラメータ）
+     * @param id                 ステータスを変更する注文のID（URLパス変数）
+     * @param status             変更後のステータス（フォームのリクエストパラメータ）
+     * @param redirectAttributes 変更不可時のエラーメッセージをフラッシュ属性として伝えるための機構
      * @return 注文詳細画面へリダイレクト
      */
     @PostMapping("/{id}/status")
-    public String updateStatus(@PathVariable Long id, @RequestParam OrderStatus status) {
-        // 指定された注文のステータスを更新する
-        orderService.updateStatus(id, status);
+    public String updateStatus(@PathVariable Long id, @RequestParam OrderStatus status,
+                                RedirectAttributes redirectAttributes) {
+        try {
+            // 指定された注文のステータスを更新する（終端状態からの変更・CANCELLEDへの直接変更はサービス層で拒否される）
+            orderService.updateStatus(id, status);
+        } catch (IllegalStateException e) {
+            // 変更できない状態だった場合、エラーメッセージをフラッシュ属性として設定する
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
         // 更新後は同じ注文の詳細画面へリダイレクトする
         return "redirect:/admin/orders/" + id;
     }

@@ -3,6 +3,7 @@ package com.example.ec.service;
 import com.example.ec.entity.Category;
 import com.example.ec.repository.CategoryRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -50,11 +51,28 @@ public class CategoryService {
 
     /**
      * カテゴリを保存する。IDが未設定なら新規登録、設定済みなら更新として動作する（JPAのsave仕様に準拠）。
+     * カテゴリ名は前後の空白を除去したうえで、必須入力・文字数上限・重複を検証する。
+     * 売上集計（管理画面ダッシュボード）がカテゴリ名でグルーピングしているため、
+     * 重複する名前を許可すると別カテゴリの売上が合算されてしまう。
      *
      * @param category 保存対象のカテゴリ
      * @return 保存後（IDが採番された状態）のカテゴリ
+     * @throws IllegalArgumentException カテゴリ名が空、100文字を超える、または既存の他カテゴリと重複する場合
      */
+    @Transactional // 重複チェックと保存を1つの整合した処理としてまとめる
     public Category save(Category category) {
+        // 入力ゆれを防ぐため、名前は前後の空白を除去する
+        String normalizedName = category.getName() == null ? "" : category.getName().trim();
+        if (normalizedName.isBlank()) {
+            throw new IllegalArgumentException("カテゴリ名を入力してください");
+        }
+        if (normalizedName.length() > 100) {
+            throw new IllegalArgumentException("カテゴリ名は100文字以内で入力してください");
+        }
+        if (categoryRepository.existsByName(normalizedName)) {
+            throw new IllegalArgumentException("同じ名前のカテゴリが既に存在します");
+        }
+        category.setName(normalizedName);
         // JPAのsaveはIDの有無で新規/更新を自動判定してくれるため、そのまま委譲する
         return categoryRepository.save(category);
     }

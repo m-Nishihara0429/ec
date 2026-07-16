@@ -51,8 +51,11 @@ public class UserService {
     // メールアドレスの重複登録を防ぎ、新規ユーザーは常に一般ユーザー権限（ROLE_USER）で作成する
     @Transactional // 重複チェックと保存を1つの整合した処理としてまとめる
     public User register(RegisterForm form) {
-        // 同じメールアドレスのユーザーが既に存在するかを確認する
-        if (userRepository.existsByEmail(form.getEmail())) {
+        // 前後の空白を除去する（メールアドレスは大文字小文字を区別しないため、
+        // 重複チェックはexistsByEmailIgnoreCaseで行い"Alice@example.com"と"alice@example.com"を
+        // 同一アドレスとして扱う。表示用に元の入力の大文字小文字はそのまま保持する）
+        String normalizedEmail = form.getEmail().trim();
+        if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
             // 既に登録済みであれば例外を投げて処理を中断する
             throw new IllegalArgumentException("このメールアドレスは既に登録されています");
         }
@@ -61,7 +64,7 @@ public class UserService {
         // フォームの氏名を設定する
         user.setName(form.getName());
         // フォームのメールアドレスを設定する
-        user.setEmail(form.getEmail());
+        user.setEmail(normalizedEmail);
         // パスワードは平文のまま保存せず、必ずハッシュ化してから設定する
         user.setPassword(passwordEncoder.encode(form.getPassword()));
         // 新規登録ユーザーには常に一般ユーザー権限を付与する（管理者は別途手動で昇格させる想定）

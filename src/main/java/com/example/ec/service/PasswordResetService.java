@@ -51,8 +51,9 @@ public class PasswordResetService {
     // 戻り値のトークンはメール送信せず、呼び出し元の画面にそのままリンクとして表示される
     @Transactional // ユーザー検索・古いトークン削除・新規トークン保存を1つの整合した処理としてまとめる
     public String issueToken(String email) {
-        // メールアドレスからユーザーを検索し、存在しなければ例外を投げる
-        User user = userRepository.findByEmail(email)
+        // メールアドレスからユーザーを検索し、存在しなければ例外を投げる。
+        // メールアドレスは大文字小文字を区別しないため、findByEmailIgnoreCaseで検索する
+        User user = userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new IllegalArgumentException("このメールアドレスは登録されていません"));
 
         // そのユーザーが持つ古いトークンをすべて削除する（同時に有効なトークンを1つに保つため）

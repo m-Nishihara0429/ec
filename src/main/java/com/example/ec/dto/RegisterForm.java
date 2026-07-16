@@ -16,14 +16,19 @@ import lombok.Setter;
 @Setter
 public class RegisterForm {
 
-    // 氏名の入力値。@NotBlank により、null・空文字・空白のみの入力はエラーとする
+    // 氏名の入力値。@NotBlank により、null・空文字・空白のみの入力はエラーとする。
+    // @Size はエンティティ側の列長（User.name, length=100）に合わせ、超過時は未処理の
+    // DataIntegrityViolationException（未ログインでも到達しうる生の500エラー）ではなく入力エラーとして扱う
     @NotBlank(message = "氏名を入力してください")
+    @Size(max = 100, message = "氏名は100文字以内で入力してください")
     private String name;
 
     // メールアドレスの入力値。
-    // @NotBlank で未入力を禁止し、@Email でメールアドレスの形式(xxx@yyy等)であることを検証する
+    // @NotBlank で未入力を禁止し、@Email でメールアドレスの形式(xxx@yyy等)であることを検証する。
+    // @Size はエンティティ側の列長（User.email, length=255）に合わせる
     @NotBlank(message = "メールアドレスを入力してください")
     @Email(message = "メールアドレスの形式が正しくありません")
+    @Size(max = 255, message = "メールアドレスは255文字以内で入力してください")
     private String email;
 
     // パスワードは8文字以上を必須とする業務ルール

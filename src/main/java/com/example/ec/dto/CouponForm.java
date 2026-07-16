@@ -4,6 +4,7 @@ import com.example.ec.entity.DiscountType;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -20,8 +21,11 @@ public class CouponForm {
     // 新規登録時はnull、編集時は対象クーポンのIDが設定される
     private Long id;
 
-    // クーポンコードの入力値。@NotBlank により、null・空文字・空白のみの入力はエラーとする
+    // クーポンコードの入力値。@NotBlank により、null・空文字・空白のみの入力はエラーとする。
+    // @Size はエンティティ側の列長（Coupon.code, length=30）に合わせ、超過時は保存時の
+    // 未処理DataIntegrityViolationException（生の500エラー）ではなくフォームの入力エラーとして扱う
     @NotBlank(message = "クーポンコードを入力してください")
+    @Size(max = 30, message = "クーポンコードは30文字以内で入力してください")
     private String code;
 
     // 割引方式（率 or 固定額）。未選択はエラーとする

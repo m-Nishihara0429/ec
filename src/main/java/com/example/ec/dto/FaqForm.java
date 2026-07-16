@@ -1,6 +1,7 @@
 package com.example.ec.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -14,7 +15,9 @@ public class FaqForm {
 
     private Long id;
 
+    // @Size はエンティティ側の列長（Faq.question, length=200）に合わせる
     @NotBlank(message = "質問を入力してください")
+    @Size(max = 200, message = "質問は200文字以内で入力してください")
     private String question;
 
     @NotBlank(message = "回答を入力してください")

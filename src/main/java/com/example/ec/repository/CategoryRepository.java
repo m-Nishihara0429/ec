@@ -12,5 +12,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
  * Category はエンティティ型、Long は主キー(id)の型を表す。
  */
 public interface CategoryRepository extends JpaRepository<Category, Long> {
-    // 独自のクエリメソッドは定義しておらず、JpaRepository標準機能のみを利用する
+    // 新規カテゴリ登録時の重複チェック用。同名カテゴリが既に存在するかを確認する
+    boolean existsByName(String name);
 }

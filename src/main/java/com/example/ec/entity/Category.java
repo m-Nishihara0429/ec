@@ -20,7 +20,9 @@ public class Category {
     @GeneratedValue(strategy = GenerationType.IDENTITY) // DB側の自動採番で主キーを生成
     private Long id; // カテゴリID（主キー）
 
-    @Column(nullable = false, length = 100) // NOT NULL制約、最大文字数100
+    // unique = true … 同名カテゴリの重複登録を防ぐ。売上集計（OrderRepository.sumSalesByCategorySince）が
+    // カテゴリ名でグルーピングしているため、重複を許すと別カテゴリの売上が同じ名前の下に合算されてしまう
+    @Column(nullable = false, length = 100, unique = true) // NOT NULL制約、最大文字数100、一意制約
     private String name; // カテゴリ名（例: 「書籍」「食品」など）
 
     // name を指定してカテゴリを生成するための引数ありコンストラクタ

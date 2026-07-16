@@ -3,6 +3,7 @@ package com.example.ec.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -20,8 +21,10 @@ public class ProductForm {
     // バリデーションアノテーションは付いていない(新規登録時にnullを許容する必要があるため)
     private Long id;
 
-    // 商品名の入力値。@NotBlank により、null・空文字・空白のみの入力はエラーとする
+    // 商品名の入力値。@NotBlank により、null・空文字・空白のみの入力はエラーとする。
+    // @Size はエンティティ側の列長（Product.name, length=200）に合わせる
     @NotBlank(message = "商品名を入力してください")
+    @Size(max = 200, message = "商品名は200文字以内で入力してください")
     private String name;
 
     // 商品説明の入力値。バリデーションアノテーションはなく、任意入力(空でも可)
@@ -39,7 +42,9 @@ public class ProductForm {
     @Min(value = 0, message = "在庫数は0以上で入力してください")
     private Integer stock;
 
-    // 商品画像のURL文字列。バリデーションアノテーションはなく、任意入力(空でも可)
+    // 商品画像のURL文字列。任意入力(空でも可)だが、@Size はエンティティ側の列長
+    // （Product.imageUrl, length=500）に合わせる
+    @Size(max = 500, message = "画像URLは500文字以内で入力してください")
     private String imageUrl;
 
     // 紐づけるカテゴリのID。バリデーションアノテーションはなく、任意入力(未選択でも可)

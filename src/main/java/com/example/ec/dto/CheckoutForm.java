@@ -3,6 +3,7 @@ package com.example.ec.dto;
 import com.example.ec.entity.PaymentMethod;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -16,8 +17,10 @@ import lombok.Setter;
 @Setter
 public class CheckoutForm {
 
-    // 配送先住所の入力値。@NotBlank により、null・空文字・空白のみの入力はエラーとする
+    // 配送先住所の入力値。@NotBlank により、null・空文字・空白のみの入力はエラーとする。
+    // @Size はエンティティ側の列長（Order.address, length=500）に合わせる
     @NotBlank(message = "配送先住所を入力してください")
+    @Size(max = 500, message = "配送先住所は500文字以内で入力してください")
     private String address;
 
     // 支払い方法。@NotNull により未選択はエラーとする
