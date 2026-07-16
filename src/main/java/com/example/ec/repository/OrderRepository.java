@@ -65,4 +65,9 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             "ORDER BY SUM(oi.price * oi.quantity) DESC")
     List<Object[]> sumSalesByCategorySince(@Param("excludedStatus") OrderStatus excludedStatus,
                                             @Param("from") LocalDateTime from);
+
+    // クーポンの同一ユーザーによる二重利用チェック用。指定ユーザーが指定クーポンコードで
+    // 過去に注文済み（かつステータスがexcludedStatus、通常はCANCELLEDではない）かどうかを判定する。
+    // キャンセル済み注文は除外することで、キャンセルされたクーポン利用は「使っていない」扱いにする。
+    boolean existsByUserAndCouponCodeAndStatusNot(User user, String couponCode, OrderStatus excludedStatus);
 }

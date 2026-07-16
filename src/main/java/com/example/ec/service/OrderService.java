@@ -74,7 +74,8 @@ public class OrderService {
      * @param couponCode    適用するクーポンコード（未入力ならnullまたは空文字）
      * @return 保存された注文（Order）エンティティ
      * @throws IllegalStateException カートが空の場合、いずれかの商品の在庫が不足している場合、
-     *                                またはクーポンが無効・条件未達・利用回数上限に達している場合
+     *                                クーポンが無効・条件未達・利用回数上限に達している場合、
+     *                                またはそのユーザーが同じクーポンを既に利用済み（1人1回まで）の場合
      */
     // カート内容から注文を作成する。各商品の在庫を減算し、注文明細・合計金額を積み上げたうえでカートを空にする
     @Transactional // 在庫減算・クーポン適用・注文保存・カートクリアを1つの原子的な処理としてまとめ、途中失敗時は全体をロールバックする
@@ -120,6 +121,11 @@ public class OrderService {
         if (couponCode != null && !couponCode.isBlank()) {
             // 有効期間・最低注文金額などを検証する（不正なら例外が投げられ、在庫減算含め全体がロールバックされる）
             Coupon coupon = couponService.validate(couponCode, subtotal);
+            // 同一ユーザーが同じクーポンを既に利用済み（キャンセル済み注文を除く）でないかを確認する。
+            // 1人1クーポン1回までとし、二重利用を防ぐ
+            if (orderRepository.existsByUserAndCouponCodeAndStatusNot(user, coupon.getCode(), OrderStatus.CANCELLED)) {
+                throw new IllegalStateException("このクーポンは既にご利用済みです");
+            }
             discount = coupon.calculateDiscount(subtotal);
             // 利用回数を原子的に加算する。検証時点と確定時点の間に他の注文が上限を使い切っていた場合はここで例外になる
             couponService.recordUsage(coupon);

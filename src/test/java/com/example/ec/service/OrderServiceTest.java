@@ -104,6 +104,30 @@ class OrderServiceTest {
         verify(couponService).recordUsage(coupon);
     }
 
+    @Test
+    void checkout_同じユーザーが同じクーポンを利用済みの場合は例外を投げ利用回数も加算されない() {
+        Product p1 = product(10L, 1000);
+        CartItem item1 = new CartItem(user, p1, 2);
+        when(cartService.findByUser(user)).thenReturn(List.of(item1));
+
+        Coupon coupon = new Coupon();
+        coupon.setId(5L);
+        coupon.setCode("SAVE500");
+        coupon.setDiscountType(DiscountType.FIXED_AMOUNT);
+        coupon.setDiscountValue(500);
+        when(couponService.validate("SAVE500", 2000)).thenReturn(coupon);
+        when(orderRepository.existsByUserAndCouponCodeAndStatusNot(user, "SAVE500", OrderStatus.CANCELLED))
+                .thenReturn(true);
+
+        assertThatThrownBy(() -> orderService.checkout(user, "住所", PaymentMethod.CREDIT_CARD, "SAVE500"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("既にご利用済み");
+
+        verify(couponService, never()).recordUsage(any());
+        verify(orderRepository, never()).save(any());
+        verify(cartService, never()).clear(user);
+    }
+
     private Order orderOf(User owner, OrderStatus status, Product... products) {
         Order order = new Order();
         order.setId(99L);
