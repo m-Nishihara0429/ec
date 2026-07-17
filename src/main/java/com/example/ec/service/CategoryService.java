@@ -2,6 +2,8 @@ package com.example.ec.service;
 
 import com.example.ec.entity.Category;
 import com.example.ec.repository.CategoryRepository;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,6 +14,13 @@ import java.util.List;
  * コントローラー層とリポジトリ層の間に立ち、カテゴリに関するビジネスロジック
  * （このクラスでは主に「見つからない場合の例外変換」）をまとめている。
  * このクラス自体は状態を持たず、すべての処理をCategoryRepositoryに委譲する薄い層になっている。
+ *
+ * <p>カテゴリ一覧（findAll）は{@link com.example.ec.config.GlobalModelAdvice}により
+ * 全画面表示のたびに呼び出される（ハンバーガーメニューのカテゴリ一覧のため）。
+ * カテゴリはほぼ変化しないデータであるにもかかわらずリクエストごとにDBへ問い合わせるのは
+ * 無駄が大きいため、{@code @Cacheable}でキャッシュする。カテゴリの登録・削除（save/deleteById）
+ * を行うメソッドで{@code @CacheEvict}によりキャッシュを破棄し、古いカテゴリ一覧が
+ * 表示され続けないようにしている。</p>
  */
 @Service // Springにこのクラスをサービス層のBeanとして登録させるアノテーション（DIコンテナに乗る）
 public class CategoryService {
@@ -30,6 +39,12 @@ public class CategoryService {
      *
      * @return カテゴリの一覧（0件の場合は空リスト）
      */
+    // 全画面共通ナビゲーション表示のため呼び出し頻度が高く、ほぼ更新されないデータなのでキャッシュする。
+    // unless で空リストはキャッシュ対象から除外している。これが無いと、アプリ起動直後
+    // （DataInitializerによる初期カテゴリ投入が完了する前）にたまたまこのメソッドが呼ばれた場合、
+    // 空の結果が永久にキャッシュされてしまい、その後カテゴリが投入されてもナビゲーションに
+    // 反映されなくなる（アプリ再起動まで気づけない）という事故につながるため。
+    @Cacheable(value = "categories", unless = "#result == null || #result.isEmpty()")
     public List<Category> findAll() {
         // リポジトリのfindAllをそのまま呼び出し、DB上の全カテゴリを返す
         return categoryRepository.findAll();
@@ -60,6 +75,7 @@ public class CategoryService {
      * @throws IllegalArgumentException カテゴリ名が空、100文字を超える、または既存の他カテゴリと重複する場合
      */
     @Transactional // 重複チェックと保存を1つの整合した処理としてまとめる
+    @CacheEvict(value = "categories", allEntries = true) // カテゴリ内容が変わるためキャッシュを破棄し、次回findAllでDBから再取得させる
     public Category save(Category category) {
         // 入力ゆれを防ぐため、名前は前後の空白を除去する
         String normalizedName = category.getName() == null ? "" : category.getName().trim();
@@ -82,6 +98,7 @@ public class CategoryService {
      *
      * @param id 削除対象のカテゴリID
      */
+    @CacheEvict(value = "categories", allEntries = true) // カテゴリ一覧が変わるためキャッシュを破棄する
     public void deleteById(Long id) {
         // リポジトリのdeleteByIdをそのまま呼び出して削除する
         categoryRepository.deleteById(id);

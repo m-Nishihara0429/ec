@@ -1,7 +1,6 @@
 package com.example.ec.controller.admin;
 
 import com.example.ec.service.InquiryService;
-import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -63,11 +62,8 @@ public class AdminInquiryController {
      */
     @PostMapping("/{id}/delete")
     public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
-        try {
-            inquiryService.deleteById(id);
-        } catch (DataAccessException e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "この問い合わせを削除できませんでした。既に削除済みの可能性があります。");
-        }
+        AdminControllerSupport.safeDelete(() -> inquiryService.deleteById(id), redirectAttributes,
+                "この問い合わせを削除できませんでした。既に削除済みの可能性があります。");
         return "redirect:/admin/inquiries";
     }
 }

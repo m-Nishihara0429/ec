@@ -6,7 +6,6 @@ import com.example.ec.entity.Product;
 import com.example.ec.service.CategoryService;
 import com.example.ec.service.ProductService;
 import jakarta.validation.Valid;
-import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Controller;
@@ -153,12 +152,8 @@ public class AdminProductController {
      */
     @PostMapping("/{id}/delete")
     public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
-        try {
-            // 指定されたIDの商品を削除する
-            productService.deleteById(id);
-        } catch (DataAccessException e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "この商品を削除できませんでした。既に削除済みか、注文やカートで参照されている可能性があります。");
-        }
+        AdminControllerSupport.safeDelete(() -> productService.deleteById(id), redirectAttributes,
+                "この商品を削除できませんでした。既に削除済みか、注文やカートで参照されている可能性があります。");
         // 削除後は商品一覧画面へリダイレクトする
         return "redirect:/admin/products";
     }

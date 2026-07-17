@@ -3,12 +3,14 @@ package com.example.ec.repository;
 import com.example.ec.entity.Order;
 import com.example.ec.entity.OrderStatus;
 import com.example.ec.entity.User;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 注文(Order)情報を管理するリポジトリ。
@@ -18,16 +20,31 @@ import java.util.List;
  * Order はエンティティ型、Long は主キー(id)の型を表す。
  */
 public interface OrderRepository extends JpaRepository<Order, Long> {
+
+    // spring.jpa.open-in-view=false のため、標準のfindByIdが返したOrderに対して
+    // コントローラー/テンプレート側でorder.items・item.product・order.user（すべてLAZY）に
+    // アクセスする時点ではセッションが閉じている。@EntityGraphでこれらを同じクエリで
+    // 一括取得しておく。items（コレクション）を1つだけ含む一括取得のため、
+    // Hibernateの複数バッグフェッチ（MultipleBagFetchException）の問題も起きない。
+    @Override
+    @EntityGraph(attributePaths = {"items.product", "user"})
+    Optional<Order> findById(Long id);
+
     // 「userカラムが一致するOrderを全件検索し、createdAt(注文日時)の降順(新しい順)に並べる」
-    // クエリメソッド。マイページの「注文履歴」一覧表示に使用する。
+    // クエリメソッド。マイページの「注文履歴」一覧表示に使用する（一覧では明細を表示しないため、
+    // 上記findByIdと異なりitems/userの一括取得は行わない）。
     List<Order> findByUserOrderByCreatedAtDesc(User user);
 
     // 「全てのOrderを、createdAt(注文日時)の降順(新しい順)に並べて取得する」クエリメソッド。
     // 管理画面の注文一覧ページに全ユーザー分の注文を新着順で表示するために使用する。
+    // 一覧に注文者名（order.user.name）を表示するため、userを一括取得しておく。
+    @EntityGraph(attributePaths = "user")
     List<Order> findAllByOrderByCreatedAtDesc();
 
     // 管理画面ダッシュボードに表示する「直近の注文」上位5件を取得する
     // 「createdAt(注文日時)の降順に並べ、先頭5件のみ取得する」クエリメソッド(Top5)。
+    // ダッシュボードの「直近の注文」テーブルにも注文者名を表示するため、userを一括取得しておく。
+    @EntityGraph(attributePaths = "user")
     List<Order> findTop5ByOrderByCreatedAtDesc();
 
     // 「statusカラムが指定した値と一致するOrderの件数」を数えるクエリメソッド。

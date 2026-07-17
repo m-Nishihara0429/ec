@@ -3,6 +3,7 @@ package com.example.ec.repository;
 import com.example.ec.entity.CartItem;
 import com.example.ec.entity.Product;
 import com.example.ec.entity.User;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -18,6 +19,10 @@ import java.util.Optional;
 public interface CartItemRepository extends JpaRepository<CartItem, Long> {
     // 「userカラムが一致するCartItemを全件検索する」クエリメソッド。
     // ログイン中ユーザーのカート画面に表示するカート内商品の一覧取得に使用する。
+    // spring.jpa.open-in-view=false のため、カート画面・チェックアウト画面のテンプレートが
+    // item.product（LAZY）を参照する時点ではセッションが閉じている。@EntityGraphでproductを
+    // 同じクエリで一括取得しておくことで、テンプレート側の遅延ロードを不要にする。
+    @EntityGraph(attributePaths = "product")
     List<CartItem> findByUser(User user);
 
     // 「userとproductの両方が一致するCartItemを1件検索する」クエリメソッド。

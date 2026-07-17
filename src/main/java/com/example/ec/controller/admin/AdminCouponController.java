@@ -5,7 +5,6 @@ import com.example.ec.entity.Coupon;
 import com.example.ec.entity.DiscountType;
 import com.example.ec.service.CouponService;
 import jakarta.validation.Valid;
-import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -122,11 +121,8 @@ public class AdminCouponController {
      */
     @PostMapping("/{id}/delete")
     public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
-        try {
-            couponService.deleteById(id);
-        } catch (DataAccessException e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "このクーポンを削除できませんでした。既に削除済みか、注文で使用されている可能性があります。");
-        }
+        AdminControllerSupport.safeDelete(() -> couponService.deleteById(id), redirectAttributes,
+                "このクーポンを削除できませんでした。既に削除済みか、注文で使用されている可能性があります。");
         return "redirect:/admin/coupons";
     }
 }

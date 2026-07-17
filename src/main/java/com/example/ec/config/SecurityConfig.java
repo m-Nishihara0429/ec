@@ -164,7 +164,16 @@ public class SecurityConfig {
             )
             // ログインへのブルートフォース対策フィルターを、実際の認証処理(UsernamePasswordAuthenticationFilter)
             // より前段に挟むことで、ブロック対象IPはパスワード照合に到達する前に429で拒否できる
-            .addFilterBefore(new LoginRateLimitFilter(loginRateLimiter), UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(new LoginRateLimitFilter(loginRateLimiter), UsernamePasswordAuthenticationFilter.class)
+            // Content-Security-Policy: 全テンプレートが外部CDNやインラインscript/styleを使わず
+            // 自ドメインの静的リソース(/css, /js, /img)のみを参照している構成のため、
+            // default-srcを'self'に絞り、XSSでの外部スクリプト読み込み・データ持ち出しの影響を減らす。
+            // Spring Securityが既定で付与するHSTS・X-Content-Type-Options等のヘッダーはそのまま活かす
+            .headers(headers -> headers
+                .contentSecurityPolicy(csp -> csp
+                    .policyDirectives("default-src 'self'; img-src 'self' data:; object-src 'none'; frame-ancestors 'none'")
+                )
+            );
 
         // ここまでの設定を反映したSecurityFilterChainを構築して返す
         return http.build();

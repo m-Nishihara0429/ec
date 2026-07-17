@@ -1,6 +1,10 @@
 package com.example.ec.repository;
 
 import com.example.ec.entity.Product;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
@@ -8,6 +12,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 商品(Product)情報を管理するリポジトリ。
@@ -21,6 +26,21 @@ import java.util.List;
  * といった処理を、条件ごとに専用メソッドを作らずに実現できる。
  */
 public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpecificationExecutor<Product> {
+
+    // spring.jpa.open-in-view=false のため、リクエスト処理中ずっとHibernateセッションが
+    // 開いたままにはならない（サービス層の呼び出しが終わると閉じる）。商品詳細画面・管理画面の
+    // 商品編集フォームはproduct.category（LAZY）をコントローラー/テンプレート側で参照するため、
+    // 標準のfindByIdをこの@EntityGraph付きのオーバーライドに差し替え、category を同じクエリで
+    // 一括取得しておく（*-to-oneの関連なので行の重複は発生せず、ページングにも影響しない）。
+    @Override
+    @EntityGraph(attributePaths = "category")
+    Optional<Product> findById(Long id);
+
+    // 商品一覧（管理画面の商品管理・検索結果ページ）でもcategoryをテンプレート側で参照するため、
+    // JpaSpecificationExecutorが提供するfindAll(Specification, Pageable)を同様にオーバーライドする。
+    @Override
+    @EntityGraph(attributePaths = "category")
+    Page<Product> findAll(Specification<Product> spec, Pageable pageable);
 
     // 管理画面の「在庫少」アラート表示用。指定した閾値以下の在庫の商品を、在庫が少ない順に最大10件取得する
     // 「stockがthreshold以下(LessThanEqual)のProductを、stockの昇順(Asc)に並べ、

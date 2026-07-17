@@ -2,7 +2,6 @@ package com.example.ec.controller.admin;
 
 import com.example.ec.entity.Category;
 import com.example.ec.service.CategoryService;
-import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -78,13 +77,8 @@ public class AdminCategoryController {
      */
     @PostMapping("/{id}/delete")
     public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
-        try {
-            // 指定されたIDのカテゴリを削除する
-            categoryService.deleteById(id);
-        } catch (DataAccessException e) {
-            // 既に削除済み、または商品から参照中で削除できない等の理由をエラーメッセージとして表示する
-            redirectAttributes.addFlashAttribute("errorMessage", "このカテゴリを削除できませんでした。既に削除済みか、商品から参照されている可能性があります。");
-        }
+        AdminControllerSupport.safeDelete(() -> categoryService.deleteById(id), redirectAttributes,
+                "このカテゴリを削除できませんでした。既に削除済みか、商品から参照されている可能性があります。");
         // 削除後はカテゴリ一覧画面へリダイレクトする
         return "redirect:/admin/categories";
     }

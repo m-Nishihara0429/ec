@@ -4,7 +4,6 @@ import com.example.ec.dto.FaqForm;
 import com.example.ec.entity.Faq;
 import com.example.ec.service.FaqService;
 import jakarta.validation.Valid;
-import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -101,11 +100,8 @@ public class AdminFaqController {
      */
     @PostMapping("/{id}/delete")
     public String delete(@PathVariable Long id, RedirectAttributes redirectAttributes) {
-        try {
-            faqService.deleteById(id);
-        } catch (DataAccessException e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "このFAQを削除できませんでした。既に削除済みの可能性があります。");
-        }
+        AdminControllerSupport.safeDelete(() -> faqService.deleteById(id), redirectAttributes,
+                "このFAQを削除できませんでした。既に削除済みの可能性があります。");
         return "redirect:/admin/faqs";
     }
 }
