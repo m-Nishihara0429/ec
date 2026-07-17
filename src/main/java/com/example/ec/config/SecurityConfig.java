@@ -166,12 +166,16 @@ public class SecurityConfig {
             // より前段に挟むことで、ブロック対象IPはパスワード照合に到達する前に429で拒否できる
             .addFilterBefore(new LoginRateLimitFilter(loginRateLimiter), UsernamePasswordAuthenticationFilter.class)
             // Content-Security-Policy: 全テンプレートが外部CDNやインラインscript/styleを使わず
-            // 自ドメインの静的リソース(/css, /js, /img)のみを参照している構成のため、
+            // 自ドメインの静的リソース(/css, /js)のみを参照している構成のため、
             // default-srcを'self'に絞り、XSSでの外部スクリプト読み込み・データ持ち出しの影響を減らす。
+            // ただしimg-srcは'self'に絞らずhttps:も許可している。商品管理フォーム(admin/product_form.html)は
+            // product.imageUrlに管理者が任意の外部URL（https://...）を入力できる設計であり、
+            // 'self'のみに絞ると管理者が設定した外部画像URLがブラウザ側で読み込みブロックされ、
+            // 「画像URLを設定しているのに表示されない」という実害が出るため。
             // Spring Securityが既定で付与するHSTS・X-Content-Type-Options等のヘッダーはそのまま活かす
             .headers(headers -> headers
                 .contentSecurityPolicy(csp -> csp
-                    .policyDirectives("default-src 'self'; img-src 'self' data:; object-src 'none'; frame-ancestors 'none'")
+                    .policyDirectives("default-src 'self'; img-src 'self' data: https:; object-src 'none'; frame-ancestors 'none'")
                 )
             );
 
