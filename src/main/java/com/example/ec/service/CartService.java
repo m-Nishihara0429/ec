@@ -45,29 +45,43 @@ public class CartService {
      * カートに商品を追加する。
      * 既に同じ商品がカートにある場合は数量を加算し、なければ新規にカート明細を作成する。
      *
+     * <p>既存行への加算は、ProductService.decreaseStockと同じ考え方で
+     * {@link CartItemRepository#incrementQuantityIfWithinLimit}による原子的なUPDATEで行う。
+     * 「読み取り→アプリ側で加算後の値を計算→書き込み」という方式だと、同じ商品を同時に
+     * 複数回「カートに追加」した際に、どちらも古い（stale）数量を見て加算してしまい、
+     * 片方の加算が失われる競合状態（lost update）が起こり得るため。
+     * 新規追加（対象行がまだ無い）の場合はこのUPDATEでは対応できないため、0件更新だった場合に
+     * 既存行の有無を確認し、無ければ新規行としてINSERTする。その新規INSERT同士が競合した場合は
+     * CartItemのユニーク制約（uk_cart_items_user_product）が最終防波堤になり、
+     * DataIntegrityViolationExceptionとしてCartControllerまで伝播する。</p>
+     *
      * @param user     カートの持ち主
      * @param product  追加する商品
      * @param quantity 追加する数量
-     * @throws IllegalArgumentException 追加する数量が1未満、または加算後の数量が上限（{@value #MAX_QUANTITY_PER_ITEM}）を超える場合
+     * @throws IllegalArgumentException 追加する数量が1未満、上限（{@value #MAX_QUANTITY_PER_ITEM}）超過、
+     *                                   または加算後の数量が上限を超える場合
      */
-    // 既に同じ商品がカートにある場合は数量を加算し、なければ新規にカート明細を作成する
-    @Transactional // 検索と保存を1つのトランザクションにまとめ、途中で失敗した場合に中途半端な状態が残らないようにする
+    @Transactional // 原子的UPDATE・存在確認・新規保存を1つの整合した処理としてまとめる
     public void addToCart(User user, Product product, int quantity) {
         // 数量が1未満（0や負数）の場合、在庫の原子的減算や注文合計金額の計算が破綻するため拒否する
         if (quantity < 1) {
             throw new IllegalArgumentException("数量は1個以上を指定してください");
         }
-        // ユーザー×商品の組み合わせで既存のカート明細を検索し、無ければ数量0の新規明細を作る
-        CartItem item = cartItemRepository.findByUserAndProduct(user, product)
-                .orElseGet(() -> new CartItem(user, product, 0));
-        // 既存数量に今回追加する数量を足し込む（新規の場合は0+quantity=quantityになる）
-        int newQuantity = item.getQuantity() + quantity;
-        if (newQuantity > MAX_QUANTITY_PER_ITEM) {
+        // 新規追加の場合に備え、単独の数量自体が上限を超えていないかも先にチェックする
+        if (quantity > MAX_QUANTITY_PER_ITEM) {
             throw new IllegalArgumentException("1つの商品につきカートに入れられる数量は" + MAX_QUANTITY_PER_ITEM + "個までです");
         }
-        item.setQuantity(newQuantity);
-        // 変更後の明細を保存する（IDが無ければINSERT、あればUPDATEされる）
-        cartItemRepository.save(item);
+        // 既存行があり、かつ加算後も上限以内であれば、この1本のUPDATEで原子的に加算が完了する
+        int updated = cartItemRepository.incrementQuantityIfWithinLimit(user, product, quantity, MAX_QUANTITY_PER_ITEM);
+        if (updated > 0) {
+            return;
+        }
+        // 0件更新の場合、「既存行はあるが上限超過」か「そもそも既存行が無い（新規追加）」かを切り分ける
+        if (cartItemRepository.findByUserAndProduct(user, product).isPresent()) {
+            throw new IllegalArgumentException("1つの商品につきカートに入れられる数量は" + MAX_QUANTITY_PER_ITEM + "個までです");
+        }
+        // 既存行が無い場合は新規のカート明細としてINSERTする
+        cartItemRepository.save(new CartItem(user, product, quantity));
     }
 
     /**
