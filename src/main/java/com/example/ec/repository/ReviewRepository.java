@@ -48,8 +48,4 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     // 1回のクエリで済ませることで、パフォーマンス上の問題(N+1問題)を回避している。
     @Query("select r.product.id, avg(r.rating) from Review r where r.product.id in :productIds group by r.product.id")
     List<Object[]> findAverageRatingsForProductIds(@Param("productIds") Collection<Long> productIds);
-
-    // アカウント削除時に、そのユーザーが投稿したレビューをまとめて削除するために使用する
-    // 「userカラムが一致するReviewを全件削除する」クエリメソッド(戻り値なし)。
-    void deleteByUser(User user);
 }
