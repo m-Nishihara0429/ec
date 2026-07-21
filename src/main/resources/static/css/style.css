@@ -579,6 +579,13 @@ main.container {
     color: white;
 }
 
+/* チェックアウト画面の郵便番号入力欄と「住所を検索」ボタンを横並びにする行。 */
+.zipcode-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
 /* テーブル内など、小さめのスペースに置く縮小版ボタンのバリエーション。 */
 .btn-small {
     padding: 6px 12px;

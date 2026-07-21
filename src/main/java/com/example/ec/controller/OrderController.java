@@ -8,9 +8,11 @@ import com.example.ec.entity.PaymentMethod;
 import com.example.ec.entity.User;
 import com.example.ec.service.CartService;
 import com.example.ec.service.OrderService;
+import com.example.ec.service.PostalCodeService;
 import jakarta.validation.Valid;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 注文（チェックアウト・注文完了・注文履歴・キャンセル）とマイページトップを担当するコントローラー。
@@ -32,11 +35,14 @@ public class OrderController {
     private final OrderService orderService;
     // カート内容の取得・合計金額計算を行うサービス
     private final CartService cartService;
+    // 郵便番号から住所を検索するサービス（チェックアウト画面の住所自動入力に使う）
+    private final PostalCodeService postalCodeService;
 
     // コンストラクタインジェクションで各サービスを受け取る
-    public OrderController(OrderService orderService, CartService cartService) {
+    public OrderController(OrderService orderService, CartService cartService, PostalCodeService postalCodeService) {
         this.orderService = orderService;
         this.cartService = cartService;
+        this.postalCodeService = postalCodeService;
     }
 
     /**
@@ -67,6 +73,25 @@ public class OrderController {
         model.addAttribute("paymentMethods", PaymentMethod.values());
         // order/checkout.html（Thymeleafテンプレート）を表示する
         return "order/checkout";
+    }
+
+    /**
+     * GET /checkout/postal-code/{zipcode}
+     * チェックアウト画面から、入力された郵便番号に対応する住所をAjaxで検索する。
+     * 外部の郵便番号検索API（zipcloud）をPostalCodeServiceがRestTemplate経由で呼び出す。
+     *
+     * @param zipcode 郵便番号（ハイフンあり/なしいずれも可）
+     * @return 成功時は {"address": "..."} の200、郵便番号が不正・該当なし・外部API失敗時は {"error": "..."} の400
+     */
+    @GetMapping("/checkout/postal-code/{zipcode}")
+    @ResponseBody
+    public ResponseEntity<Map<String, String>> postalCode(@PathVariable String zipcode) {
+        try {
+            String address = postalCodeService.lookupAddress(zipcode);
+            return ResponseEntity.ok(Map.of("address", address));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
     /**

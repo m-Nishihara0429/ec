@@ -8,6 +8,7 @@
     <title>ご注文手続き | Simple EC</title>
     <!-- th:href="@{...}" はThymeleafのURL式構文。コンテキストパスを考慮したURLを生成する -->
     <link rel="stylesheet" th:href="@{/css/style.css}">
+    <script th:src="@{/js/postal-code.js}" defer></script>
 </head>
 <body>
 <!-- th:replace はこの要素そのものを、指定したフラグメント（共通部品）に置き換える。
@@ -50,6 +51,17 @@
          th:object="${checkoutForm}" はこのフォーム内で使う th:field のバインド先オブジェクト（フォームバックングオブジェクト）を指定する。
          Spring Security使用時、Thymeleafは<form method="post">に自動的にCSRFトークンのhidden inputを差し込む（Spring Security連携のデフォルト動作） -->
     <form th:action="@{/checkout}" th:object="${checkoutForm}" method="post" class="form">
+        <div class="form-group">
+            <label for="zipcode">郵便番号</label>
+            <!-- 住所の入力補助。郵便番号を入力して「住所を検索」を押すと、下の住所欄に自動入力される
+                 （static/js/postal-code.jsがOrderController#postalCode経由でzipcloud APIの検索結果を取得する）。
+                 このzipcode欄自体はチェックアウトフォーム(checkoutForm)のフィールドではないためth:fieldは使わない -->
+            <div class="zipcode-row">
+                <input type="text" id="zipcode" placeholder="例: 100-0001" maxlength="8">
+                <button type="button" id="zipcode-search-btn" class="btn">住所を検索</button>
+            </div>
+            <p id="zipcode-error" class="field-error" style="display:none;"></p>
+        </div>
         <div class="form-group">
             <label for="address">配送先住所</label>
             <!-- th:field="*{address}" は th:object で指定した checkoutForm の address プロパティに
