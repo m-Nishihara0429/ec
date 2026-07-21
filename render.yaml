@@ -1,12 +1,12 @@
 # Render Blueprint。Renderダッシュボードで「New > Blueprint」からこのリポジトリを選ぶと、
-# Webサービス（Dockerfileベース）とPostgreSQLデータベースをまとめて作成できる。
+# Webサービス（Dockerfileベース）を作成できる。
 # 参考: https://render.com/docs/blueprint-spec
-databases:
-  - name: ec-site-db
-    plan: free
-    databaseName: ec_site
-    user: ec_site
-
+#
+# --- DBについて ---
+# RenderのマネージドPostgreSQL(無料プラン)は作成から30日で自動削除されてしまうため、
+# 使用しない。代わりに外部のNeon(https://neon.tech、無料枠、30日削除なし)のPostgreSQLに
+# 接続する。そのためdatabases:セクションは持たず、DB_HOST等は下記の通りすべてsync: falseにして
+# Renderダッシュボードの Environment タブでNeonの接続情報を手動設定する運用にしている。
 services:
   - type: web
     name: ec-site
@@ -17,27 +17,19 @@ services:
       # SQLiteではなくapplication-postgres.propertiesを使わせるためのプロファイル切り替え
       - key: SPRING_PROFILES_ACTIVE
         value: postgres
-      # 以下4つはec-site-dbデータベースの接続情報を自動的に注入する
+      # 以下5つはNeonの接続情報。render.yamlには値を書かず、Renderダッシュボードの
+      # EnvironmentタブでNeonプロジェクトの接続文字列から値を転記すること。
+      # (host: xxx.neon.tech の部分, port: 5432, name: データベース名, user/password: Neonが発行した認証情報)
       - key: DB_HOST
-        fromDatabase:
-          name: ec-site-db
-          property: host
+        sync: false
       - key: DB_PORT
-        fromDatabase:
-          name: ec-site-db
-          property: port
+        sync: false
       - key: DB_NAME
-        fromDatabase:
-          name: ec-site-db
-          property: database
+        sync: false
       - key: DB_USER
-        fromDatabase:
-          name: ec-site-db
-          property: user
+        sync: false
       - key: DB_PASSWORD
-        fromDatabase:
-          name: ec-site-db
-          property: password
+        sync: false
       # 以下1つはRenderダッシュボードのEnvironmentタブで実際の値を手動設定する（sync: falseのため
       # render.yamlには値を書かず、必ず強い値をセットしてから初回デプロイすること）
       - key: REMEMBER_ME_KEY
