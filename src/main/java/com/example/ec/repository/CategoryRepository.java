@@ -3,6 +3,8 @@ package com.example.ec.repository;
 import com.example.ec.entity.Category;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Optional;
+
 /**
  * 商品カテゴリを管理するリポジトリ。
  * JpaRepositoryが提供する標準のCRUD操作のみを利用する。
@@ -14,4 +16,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface CategoryRepository extends JpaRepository<Category, Long> {
     // 新規カテゴリ登録時の重複チェック用。同名カテゴリが既に存在するかを確認する
     boolean existsByName(String name);
+
+    // 商品CSV一括登録時、カテゴリ名（文字列）からカテゴリを特定するために使用する
+    Optional<Category> findByName(String name);
 }

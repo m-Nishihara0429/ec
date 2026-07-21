@@ -1,5 +1,6 @@
 package com.example.ec.service;
 
+import com.example.ec.dto.CsvImportResult;
 import com.example.ec.dto.ProductForm;
 import com.example.ec.dto.ProductSort;
 import com.example.ec.entity.Category;
@@ -11,7 +12,13 @@ import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -226,6 +233,151 @@ public class ProductService {
         }
         // 商品を保存し、保存後のエンティティを返す（新規ならINSERT、既存ならUPDATE）
         return productRepository.save(product);
+    }
+
+    /**
+     * CSVファイルから商品を一括登録する（管理画面の「CSVから一括登録」機能）。
+     * 1行目はヘッダー行として読み飛ばし、2行目以降を
+     * 「商品名,商品説明,価格,在庫数,カテゴリ名,画像URL」の6列として解釈する
+     * （商品説明・カテゴリ名・画像URLは空でもよい）。
+     * カテゴリ名を指定する場合は、既存のカテゴリ名と完全一致している必要がある
+     * （誤入力によるカテゴリの意図しない乱立を防ぐため、CSV取り込み時に新規カテゴリは作成しない）。
+     * 1行ごとに検証し、不正な行はその行だけスキップして処理を続ける
+     * （1行の入力ミスでCSV全体の取り込みを失敗させないため）。
+     *
+     * @param file アップロードされたCSVファイル（UTF-8想定）
+     * @return 登録できた件数と、スキップした行の理由一覧
+     * @throws IllegalArgumentException ファイル自体の読み込みに失敗した場合（文字コード不正等）
+     */
+    @Transactional // 行ごとのINSERTをまとめて1つの処理として扱う（読み込み自体はDB操作ではないためロールバック対象ではない）
+    public CsvImportResult importFromCsv(MultipartFile file) {
+        int successCount = 0;
+        List<String> errors = new ArrayList<>();
+
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
+            String line;
+            int lineNumber = 0;
+            boolean headerSkipped = false;
+            while ((line = reader.readLine()) != null) {
+                lineNumber++;
+                // 1行目はヘッダー行（列名）として読み飛ばす
+                if (!headerSkipped) {
+                    headerSkipped = true;
+                    continue;
+                }
+                // 空行は無視する（末尾の改行などで発生しうる）
+                if (line.isBlank()) {
+                    continue;
+                }
+                try {
+                    importRow(line);
+                    successCount++;
+                } catch (IllegalArgumentException e) {
+                    // この行だけスキップし、行番号と理由を記録して次の行の処理を続ける
+                    errors.add(lineNumber + "行目: " + e.getMessage());
+                }
+            }
+        } catch (IOException e) {
+            // ファイル自体を読み込めない（文字コード不正など）場合は取り込み全体を中断する
+            throw new IllegalArgumentException("CSVファイルの読み込みに失敗しました。UTF-8で保存し直してから再度お試しください", e);
+        }
+
+        return new CsvImportResult(successCount, errors);
+    }
+
+    /**
+     * CSVの1行（ヘッダー行・空行を除く）を解析し、商品として保存する。
+     * importFromCsvから行ごとに呼び出される。
+     *
+     * @param line CSVの1行分の文字列
+     * @throws IllegalArgumentException 列数不足・必須項目の欠落・数値変換失敗・カテゴリ名不一致など、
+     *                                   この行を登録できない場合
+     */
+    private void importRow(String line) {
+        String[] cols = parseCsvLine(line);
+        if (cols.length < 4) {
+            throw new IllegalArgumentException("列数が不足しています（商品名,商品説明,価格,在庫数,カテゴリ名,画像URL の順で入力してください）");
+        }
+
+        String name = cols[0].trim();
+        String description = cols[1].trim();
+        String priceStr = cols[2].trim();
+        String stockStr = cols[3].trim();
+        String categoryName = cols.length > 4 ? cols[4].trim() : "";
+        String imageUrl = cols.length > 5 ? cols[5].trim() : "";
+
+        if (name.isEmpty()) {
+            throw new IllegalArgumentException("商品名が空です");
+        }
+
+        int price;
+        int stock;
+        try {
+            price = Integer.parseInt(priceStr);
+            stock = Integer.parseInt(stockStr);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("価格・在庫数は数値で入力してください");
+        }
+        if (price < 0 || stock < 0) {
+            throw new IllegalArgumentException("価格・在庫数は0以上で入力してください");
+        }
+
+        Product product = new Product();
+        product.setName(name);
+        product.setDescription(description.isEmpty() ? null : description);
+        product.setPrice(price);
+        product.setStock(stock);
+        product.setImageUrl(imageUrl.isEmpty() ? null : imageUrl);
+        if (!categoryName.isEmpty()) {
+            // CSV取り込み時に未知のカテゴリ名を自動でカテゴリ登録してしまうと、
+            // 誤字（例:「家電」のつもりが「家伝」）で意図しないカテゴリが乱立しうるため、
+            // 既存カテゴリと完全一致しない場合はエラーとしてこの行をスキップする
+            Category category = categoryRepository.findByName(categoryName)
+                    .orElseThrow(() -> new IllegalArgumentException("カテゴリが見つかりません: " + categoryName));
+            product.setCategory(category);
+        }
+        productRepository.save(product);
+    }
+
+    /**
+     * CSVの1行をカンマ区切りの列に分解する簡易パーサー。
+     * ダブルクォートで囲まれたフィールド内のカンマ・改行相当の文字や、
+     * 二重引用符のエスケープ（""）に対応する（RFC4180の簡易実装）。
+     * 商品説明にカンマや改行が含まれる場合を考慮している。
+     *
+     * @param line CSVの1行分の文字列
+     * @return カンマ区切りで分解した列の配列
+     */
+    private String[] parseCsvLine(String line) {
+        List<String> fields = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        boolean inQuotes = false;
+        for (int i = 0; i < line.length(); i++) {
+            char c = line.charAt(i);
+            if (inQuotes) {
+                if (c == '"') {
+                    // 引用符内の""はエスケープされた"1文字として扱う
+                    if (i + 1 < line.length() && line.charAt(i + 1) == '"') {
+                        current.append('"');
+                        i++;
+                    } else {
+                        inQuotes = false;
+                    }
+                } else {
+                    current.append(c);
+                }
+            } else if (c == '"') {
+                inQuotes = true;
+            } else if (c == ',') {
+                fields.add(current.toString());
+                current.setLength(0);
+            } else {
+                current.append(c);
+            }
+        }
+        fields.add(current.toString());
+        return fields.toArray(new String[0]);
     }
 
     /**

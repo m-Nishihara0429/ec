@@ -290,6 +290,20 @@ main.container {
     align-items: center;
 }
 
+/* page-header内で「CSVから一括登録」フォームと「新規登録」ボタンなど、複数のアクションを横並びにする。 */
+.page-header-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* CSV一括登録フォーム（ファイル選択とボタンを横並びにする）。 */
+.csv-import-form {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
 /* Category list */
 /* サイドバーのカテゴリ一覧（ul要素）。リストの黒丸や既定の余白を消してカスタムデザインにする。 */
 .category-list {

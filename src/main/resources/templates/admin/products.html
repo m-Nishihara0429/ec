@@ -16,14 +16,33 @@
     <!-- 管理画面共通のサブナビゲーション（ダッシュボード/商品/カテゴリ/注文の切り替えメニュー）を差し込む -->
     <div th:replace="~{fragments/admin_nav :: nav}"></div>
 
-    <!-- ページタイトルと「新規登録」ボタンを横並びに配置するヘッダー領域 -->
+    <!-- ページタイトルと「CSVから一括登録」「新規登録」を横並びに配置するヘッダー領域 -->
     <div class="page-header">
         <h1>商品管理</h1>
-        <a th:href="@{/admin/products/new}" class="btn btn-primary">新規登録</a>
+        <div class="page-header-actions">
+            <!-- CSVファイルから商品を一括登録するフォーム。enctype="multipart/form-data"必須。
+                 列は「商品名,商品説明,価格,在庫数,カテゴリ名,画像URL」（1行目はヘッダー行として読み飛ばされる）。
+                 実際の読み込み・行ごとの検証はAdminProductController#importCsv→ProductService#importFromCsvが行う -->
+            <form th:action="@{/admin/products/import}" method="post" enctype="multipart/form-data" class="csv-import-form">
+                <input type="file" name="file" accept=".csv" required>
+                <button type="submit" class="btn">CSVから一括登録</button>
+            </form>
+            <a th:href="@{/admin/products/new}" class="btn btn-primary">新規登録</a>
+        </div>
     </div>
 
-    <!-- 削除失敗時（既に削除済み・注文やカートで参照中等）のエラーメッセージをフラッシュ属性から表示する -->
+    <!-- 削除失敗時（既に削除済み・注文やカートで参照中等）、またはCSV取り込み自体の失敗時のエラーメッセージ -->
     <p class="alert-error" th:if="${errorMessage}" th:text="${errorMessage}"></p>
+
+    <!-- CSV一括登録の結果（登録件数）をフラッシュ属性から表示する -->
+    <p class="alert-success" th:if="${importSuccessCount != null}" th:text="${importSuccessCount} + '件の商品を登録しました。'"></p>
+    <!-- スキップした行がある場合は、行番号と理由の一覧をエラー表示エリアに列挙する -->
+    <div class="alert-error" th:if="${importErrors != null and !#lists.isEmpty(importErrors)}">
+        <p>以下の行はスキップされました。</p>
+        <ul>
+            <li th:each="err : ${importErrors}" th:text="${err}"></li>
+        </ul>
+    </div>
 
     <table class="table">
         <thead>

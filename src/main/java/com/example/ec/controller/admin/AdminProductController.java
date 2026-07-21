@@ -1,5 +1,6 @@
 package com.example.ec.controller.admin;
 
+import com.example.ec.dto.CsvImportResult;
 import com.example.ec.dto.ProductForm;
 import com.example.ec.dto.ProductSort;
 import com.example.ec.entity.Product;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
@@ -137,6 +139,35 @@ public class AdminProductController {
             return "admin/product_form";
         }
         // 保存後は商品一覧画面へリダイレクトする
+        return "redirect:/admin/products";
+    }
+
+    /**
+     * POST /admin/products/import
+     * CSVファイルから商品を一括登録する。1行の入力ミスがあってもその行だけスキップして
+     * 処理を続け、結果（登録件数・スキップした行とその理由）をフラッシュ属性で一覧画面に伝える
+     * （実際のCSV読み込み・行ごとの検証はProductService#importFromCsvが行う）。
+     *
+     * @param file               アップロードされたCSVファイル
+     * @param redirectAttributes 取り込み結果メッセージをフラッシュ属性として伝えるための機構
+     * @return 商品一覧画面へのリダイレクト
+     */
+    @PostMapping("/import")
+    public String importCsv(@RequestParam("file") MultipartFile file, RedirectAttributes redirectAttributes) {
+        if (file.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "CSVファイルを選択してください");
+            return "redirect:/admin/products";
+        }
+        CsvImportResult result;
+        try {
+            result = productService.importFromCsv(file);
+        } catch (IllegalArgumentException e) {
+            // ファイル自体が読み込めない（文字コード不正等）場合
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/admin/products";
+        }
+        redirectAttributes.addFlashAttribute("importSuccessCount", result.getSuccessCount());
+        redirectAttributes.addFlashAttribute("importErrors", result.getErrors());
         return "redirect:/admin/products";
     }
 
