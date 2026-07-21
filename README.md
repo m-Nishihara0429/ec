@@ -60,6 +60,7 @@ export JAVA_HOME=/path/to/jdk-23
 | 用途 | メールアドレス | パスワード | 権限 |
 |---|---|---|---|
 | 管理者 | admin@example.com | admin123 | ADMIN |
+| マスター管理者 | master@example.com | master1234 | MASTER |
 | 一般ユーザー | user@example.com | user1234 | USER |
 
 ログイン画面にもこのヒントが表示されます。

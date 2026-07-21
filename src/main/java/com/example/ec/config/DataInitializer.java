@@ -21,6 +21,7 @@ import java.util.Map;
  * {@link CommandLineRunner} を実装しているため、起動完了直後に{@link #run}が自動実行される。
  * 投入されるデータは以下の通り（学習用ECサイトの動作確認用データ）：
  * ・管理者アカウント: admin@example.com / パスワード admin123（ROLE_ADMIN）
+ * ・テスト用マスター管理者アカウント: master@example.com / パスワード master1234（ROLE_MASTER）
  * ・サイト運営者アカウント: owner@example.com / パスワードは app.master.password プロパティ（ROLE_MASTER。会員管理も可能な最上位ロール）
  * ・一般ユーザーアカウント: user@example.com / パスワード user1234（ROLE_USER）
  * ・カテゴリ: 書籍・家電・キッチン用品
@@ -87,6 +88,22 @@ public class DataInitializer implements CommandLineRunner {
             admin.setRole(Role.ROLE_ADMIN);
             // DBに保存する
             userRepository.save(admin);
+        }
+
+        // 動作確認用のマスター管理者アカウントが未登録なら作成する（admin/userと同様の固定パスワードのテストアカウント）
+        if (userRepository.findByEmail("master@example.com").isEmpty()) {
+            // 新規Userエンティティを作成
+            User testMaster = new User();
+            // 表示名を設定
+            testMaster.setName("テストマスター");
+            // ログインID代わりのメールアドレスを設定
+            testMaster.setEmail("master@example.com");
+            // パスワード"master1234"をハッシュ化して設定
+            testMaster.setPassword(passwordEncoder.encode("master1234"));
+            // ロールをマスター管理者(ROLE_MASTER)に設定
+            testMaster.setRole(Role.ROLE_MASTER);
+            // DBに保存する
+            userRepository.save(testMaster);
         }
 
         // サイト運営者用のマスター管理者アカウント。未作成、またはパスワードが
