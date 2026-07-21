@@ -9,7 +9,6 @@ import com.example.ec.repository.CategoryRepository;
 import com.example.ec.repository.FaqRepository;
 import com.example.ec.repository.ProductRepository;
 import com.example.ec.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -21,8 +20,7 @@ import java.util.Map;
  * {@link CommandLineRunner} を実装しているため、起動完了直後に{@link #run}が自動実行される。
  * 投入されるデータは以下の通り（学習用ECサイトの動作確認用データ）：
  * ・管理者アカウント: admin@example.com / パスワード admin123（ROLE_ADMIN）
- * ・テスト用マスター管理者アカウント: master@example.com / パスワード master1234（ROLE_MASTER）
- * ・サイト運営者アカウント: owner@example.com / パスワードは app.master.password プロパティ（ROLE_MASTER。会員管理も可能な最上位ロール）
+ * ・テスト用マスター管理者アカウント: master@example.com / パスワード master1234（ROLE_MASTER。会員管理も可能な最上位ロール）
  * ・一般ユーザーアカウント: user@example.com / パスワード user1234（ROLE_USER）
  * ・カテゴリ: 書籍・家電・キッチン用品
  * ・商品: 各カテゴリにサンプル商品を2件ずつ、計6件
@@ -40,10 +38,6 @@ public class DataInitializer implements CommandLineRunner {
     private final FaqRepository faqRepository;
     // パスワードをハッシュ化するためのエンコーダー（平文のまま保存しないため）
     private final PasswordEncoder passwordEncoder;
-    // マスター管理者アカウントのパスワード。実際のパスワードをソースコードに残さないよう、
-    // 環境変数 APP_MASTER_PASSWORD（application.propertiesのapp.master.password）から読み込む。
-    // 未設定時（ローカル開発など）は無害なプレースホルダー値にフォールバックする。
-    private final String masterPassword;
 
     /**
      * コンストラクタ。Spring DIによって各リポジトリ・エンコーダーが自動的に注入される。
@@ -52,19 +46,16 @@ public class DataInitializer implements CommandLineRunner {
      * @param productRepository 商品リポジトリ
      * @param faqRepository FAQリポジトリ
      * @param passwordEncoder パスワードエンコーダー
-     * @param masterPassword マスター管理者アカウントのパスワード（app.master.propertyから注入）
      */
     public DataInitializer(UserRepository userRepository, CategoryRepository categoryRepository,
                             ProductRepository productRepository, FaqRepository faqRepository,
-                            PasswordEncoder passwordEncoder,
-                            @Value("${app.master.password:ChangeMe_Master2026}") String masterPassword) {
+                            PasswordEncoder passwordEncoder) {
         // 各フィールドに依存を保持する
         this.userRepository = userRepository;
         this.categoryRepository = categoryRepository;
         this.productRepository = productRepository;
         this.faqRepository = faqRepository;
         this.passwordEncoder = passwordEncoder;
-        this.masterPassword = masterPassword;
     }
 
     /**
@@ -104,32 +95,6 @@ public class DataInitializer implements CommandLineRunner {
             testMaster.setRole(Role.ROLE_MASTER);
             // DBに保存する
             userRepository.save(testMaster);
-        }
-
-        // サイト運営者用のマスター管理者アカウント。未作成、またはパスワードが
-        // 期待値と一致しない場合は作成・更新してログインできる状態を保つ。
-        // マスター管理者（ROLE_MASTER）は通常の管理者（ROLE_ADMIN）の操作に加えて、
-        // 会員のロール変更・アカウント有効/無効化ができる最上位ロール。
-        // 既存の運営者アカウントを検索し、存在しなければ空のUserを新規作成する
-        User owner = userRepository.findByEmail("owner@example.com").orElseGet(User::new);
-        // IDが未採番（新規）、またはパスワードが期待値と一致しない場合に作成・更新処理を行う
-        if (owner.getId() == null || !passwordEncoder.matches(masterPassword, owner.getPassword())) {
-            // 表示名を設定
-            owner.setName("masa");
-            // ログインID代わりのメールアドレスを設定
-            owner.setEmail("owner@example.com");
-            // 期待するパスワードをハッシュ化して設定（既存パスワードとズレていれば上書き）
-            owner.setPassword(passwordEncoder.encode(masterPassword));
-            // ロールをマスター管理者(ROLE_MASTER)に設定
-            owner.setRole(Role.ROLE_MASTER);
-            // DBに保存（新規INSERTまたは既存レコードのUPDATE）する
-            userRepository.save(owner);
-        } else if (owner.getRole() != Role.ROLE_MASTER) {
-            // ROLE_MASTER導入前に作成された既存DBでは、このアカウントがROLE_ADMINのまま残っている場合がある
-            // （パスワードは一致しているため上のif文には入らない）。ロールだけをMASTERへ補正する、
-            // 何度起動しても安全な（べき等な）補正処理。
-            owner.setRole(Role.ROLE_MASTER);
-            userRepository.save(owner);
         }
 
         // 動作確認用の一般ユーザーアカウントが未登録なら作成する

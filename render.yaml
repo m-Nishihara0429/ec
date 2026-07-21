@@ -38,9 +38,7 @@ services:
         fromDatabase:
           name: ec-site-db
           property: password
-      # 以下2つはRenderダッシュボードのEnvironmentタブで実際の値を手動設定する（sync: falseのため
-      # render.yamlには値を書かず、必ず個別に強い値をセットしてから初回デプロイすること）
-      - key: MASTER_PASSWORD
-        sync: false
+      # 以下1つはRenderダッシュボードのEnvironmentタブで実際の値を手動設定する（sync: falseのため
+      # render.yamlには値を書かず、必ず強い値をセットしてから初回デプロイすること）
       - key: REMEMBER_ME_KEY
         sync: false
