@@ -172,10 +172,17 @@ public class SecurityConfig {
             // product.imageUrlに管理者が任意の外部URL（https://...）を入力できる設計であり、
             // 'self'のみに絞ると管理者が設定した外部画像URLがブラウザ側で読み込みブロックされ、
             // 「画像URLを設定しているのに表示されない」という実害が出るため。
+            // style-srcは'unsafe-inline'を明示的に許可する。管理画面ダッシュボードの売上棒グラフ
+            // （admin/dashboard.html）は棒の高さをth:style="'height:' + ...% "という
+            // インラインstyle属性で動的に描画しており、style-src未指定のままdefault-src 'self'に
+            // フォールバックさせるとブラウザがこのインラインstyleをブロックし、棒グラフの高さが
+            // すべて0（CSSのmin-height分のみ）に見えてしまう実害があったため。
+            // script-srcはdefault-src 'self'のまま（'unsafe-inline'を含まない）なので、
+            // インラインスクリプト実行に対するXSS防御は従来どおり厳格に保たれる。
             // Spring Securityが既定で付与するHSTS・X-Content-Type-Options等のヘッダーはそのまま活かす
             .headers(headers -> headers
                 .contentSecurityPolicy(csp -> csp
-                    .policyDirectives("default-src 'self'; img-src 'self' data: https:; object-src 'none'; frame-ancestors 'none'")
+                    .policyDirectives("default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; object-src 'none'; frame-ancestors 'none'")
                 )
             );
 
