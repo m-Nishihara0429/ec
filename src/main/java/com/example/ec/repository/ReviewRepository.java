@@ -3,6 +3,7 @@ package com.example.ec.repository;
 import com.example.ec.entity.Product;
 import com.example.ec.entity.Review;
 import com.example.ec.entity.User;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -22,6 +23,9 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     // 「productカラムが一致するReviewを全件検索し、createdAt(投稿日時)の降順(新しい順)に並べる」
     // クエリメソッド。商品詳細ページにレビュー一覧を新着順で表示するために使用する。
+    // spring.jpa.open-in-view=false のため、テンプレート側でreview.user（LAZY）を参照する
+    // 時点ではセッションが閉じている。@EntityGraphでuserを同じクエリで一括取得しておく。
+    @EntityGraph(attributePaths = "user")
     List<Review> findByProductOrderByCreatedAtDesc(Product product);
 
     // 1ユーザーにつき1商品1件のレビューという前提のもと、既存レビューの有無・編集対象を取得する
